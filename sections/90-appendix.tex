@@ -1,15 +1,21 @@
-\section{Additional Experimental Details}
-\label{app:details}
+\section{Evaluation Metrics}
+\label{app:metrics}
 
-Place derivations, extended tables, prompts, implementation details, and additional analyses here. Ensure that the main paper remains understandable without the appendix.
+The primary safety metrics are unsafe-action count, availability violations, data-loss events, unnecessary drain rate, and pre-failure protection rate. Effectiveness metrics include time at risk, risk-exposure area from \cref{eq:risk-exposure}, repair completion time, and bytes rewritten. Performance metrics include foreground throughput and P50/P95/P99/P99.9 latency together with maintenance progress.
 
-\section{Reproducibility Checklist}
-\label{app:checklist}
+\section{Planned Fault and Workload Matrix}
+\label{app:matrix}
+
+Fault traces cover transient risk spikes, sustained risk, false-positive recovery, hard EIO, silent corruption, multiple concurrent risky devices, insufficient redundancy, metadata conflicts, and device addition followed by rebalance. Foreground workloads cover sequential reads/writes, random reads/writes, mixed read/write traffic, and metadata-heavy small-file operations.
+
+\section{Reproducibility Protocol}
+\label{app:reproducibility}
 
 \begin{itemize}[leftmargin=*]
-  \item Code, configuration files, and environment specifications are versioned.
-  \item Data provenance and preprocessing are documented.
-  \item Random seeds and the number of repetitions are reported.
-  \item Hardware and software versions are recorded.
-  \item Primary metrics and statistical tests are defined before interpretation.
+  \item Every experiment records the \argosfs{} commit and paper-experiment configuration.
+  \item Randomized traces use explicit seeds that are replayed across all baselines.
+  \item Raw JSONL/CSV records are retained before aggregation.
+  \item Performance experiments report repetitions and confidence intervals.
+  \item Device-mapper and QEMU artifacts retain fault parameters and execution logs.
+  \item Published figures are generated from retained machine-readable results.
 \end{itemize}

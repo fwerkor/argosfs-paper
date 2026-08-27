@@ -1,13 +1,17 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Introduce the problem and explain why it matters. A strong introduction usually establishes the practical or scientific context, identifies the limitation in prior work, states the central idea, and previews the evidence supporting the claims.
+Storage maintenance is increasingly driven by signals that arrive before a hard failure: SMART counters, I/O errors, latency changes, imbalance, corruption detected by scrubbing, and workload pressure. These signals create an opportunity to move from failure handling after the fact to continuous maintenance. They also create a control problem. A transient warning should not automatically evict a healthy device, an aggressive scrub should not overwhelm foreground I/O, and a controller must not perform a destructive transition when redundancy is already insufficient.
 
-A concise contribution list can be useful:
+Prior work has studied automatic storage configuration, disk-failure prediction, and proactive repair as important individual mechanisms \citep{anderson2002hippodrome,lu2020smarter,li2022fastpr}. We focus on the layer between prediction and repair: how a file system can safely turn imperfect observations into maintenance actions while preserving availability and bounding interference with foreground work.
+
+We study this problem through \autopilot, the autonomous maintenance controller in \argosfs. The design treats maintenance as a persistent feedback loop rather than a collection of independent timers. Each iteration gathers observations, updates durable risk memory, evaluates safety and policy constraints, selects a bounded action, records the outcome, and uses recent foreground pressure and action utility to constrain subsequent work.
+
+The paper is structured around three contributions:
 \begin{itemize}[leftmargin=*]
-  \item We formulate the target problem and define the evaluation criteria.
-  \item We propose \methodname, a method designed around the identified constraints.
-  \item We evaluate the method across representative settings and report reproducible results.
+  \item We formulate \emph{safe closed-loop maintenance} as a control problem under uncertain health observations, explicit redundancy constraints, and shared foreground/background I/O resources.
+  \item We design and implement \autopilot, which unifies observe, scrub, rebalance, and drain decisions with persistent evidence, confirmation and cooldown gates, conflict-aware mutation stopping, and foreground-aware budgets.
+  \item We define a reproducible evaluation that separates correctness from effectiveness: large trace-driven decision tests, real block-fault injection, mounted file-system workloads, and ablations against reactive, periodic, fixed-threshold, and oracle policies.
 \end{itemize}
 
-The remainder of the paper presents background in \cref{sec:background}, the method in \cref{sec:method}, and the evaluation in \cref{sec:experiments}.
+\Cref{sec:background} states the problem and metrics. \Cref{sec:design} presents the controller, \cref{sec:implementation} maps the design to \argosfs, and \cref{sec:evaluation} defines the experiments used to validate the claims.

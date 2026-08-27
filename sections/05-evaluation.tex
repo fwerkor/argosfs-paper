@@ -1,0 +1,36 @@
+\section{Evaluation}
+\label{sec:evaluation}
+
+The evaluation distinguishes a controller that merely executes maintenance from one that improves the safety--recovery--interference tradeoff. Each randomized failure or workload trace is replayed identically across comparison policies.
+
+\subsection{Baselines}
+\input{tables/evaluation-matrix}
+
+\paragraph{Reactive.}
+Maintenance begins only after a hard device failure or detected corruption.
+
+\paragraph{Periodic.}
+Scrub and rebalance run on fixed schedules with a fixed background budget and no health-dependent action selection.
+
+\paragraph{Fixed threshold.}
+A health score above a fixed threshold immediately triggers proactive maintenance using a fixed budget. This baseline isolates the value of persistent evidence, cooldowns, safety gates, and load feedback from the value of prediction itself.
+
+\paragraph{Oracle.}
+An offline policy with knowledge of the injected future failure time supplies a reference upper bound rather than a deployable baseline.
+
+\subsection{RQ1: Does Autopilot avoid unsafe or unnecessary actions?}
+We generate deterministic traces containing transient health spikes, sustained degradation, false positives, multiple risky devices, insufficient redundancy, metadata conflicts, EIO, and corruption. The primary metrics are unsafe-action count, data-loss events, availability violations, unnecessary drain rate, and pre-failure protection rate. Large trace-driven runs test decision logic at scale; device-mapper fault injection validates selected traces against real block errors.
+
+\subsection{RQ2: Does Autopilot reduce risk exposure?}
+We compare the duration and area of elevated-risk states under reactive, periodic, fixed-threshold, \autopilot, and oracle policies. Measurements include time at risk, repair or drain completion time, bytes exposed to the risky failure domain, bytes rewritten, and resulting redundancy. Trace-driven health histories are complemented by controlled faults on the block backend.
+
+\subsection{RQ3: Does Autopilot bound foreground interference?}
+Mounted \argosfs{} instances run sequential, random, mixed, and metadata-heavy foreground workloads while scrub, rebalance, or drain is active. We report throughput together with P50, P95, P99, and P99.9 latency. Fixed background budgets are swept across a range of rates to construct a performance--recovery Pareto frontier; \autopilot{} is evaluated at the same completed maintenance work rather than at equal wall-clock time alone.
+
+\subsection{RQ4: Does closed-loop adaptation matter?}
+A long-running workload changes foreground pressure, device risk, corruption state, and available capacity over time. We record risk score, chosen action, effective maintenance budget, foreground tail latency, and recovery progress. Ablations remove confirmation, cooldown, foreground-aware throttling, adaptive action history, persistent risk memory, and conflict stopping one component at a time.
+
+\subsection{Experimental layers and statistics}
+The study uses three layers: large deterministic trace replay for statistical coverage, Linux device-mapper and loop devices for real EIO/corruption behavior, and FUSE/QEMU execution for mounted and root-file-system behavior. Performance configurations are repeated and reported with medians and 95\% bootstrap confidence intervals. Tail-latency claims are computed from sufficiently large I/O samples rather than phase-level aggregates. Randomized experiments retain seeds and raw machine-readable records.
+
+The existing \argosfs{} repository already contains smoke-level Autopilot scenarios and block-fault injection. Those tests establish implementation correctness but are not treated as the final performance evidence for this paper; the publication experiments use the stricter protocol above.

@@ -1,0 +1,40 @@
+\section{Autopilot Design}
+\label{sec:design}
+
+\subsection{Closed-loop controller}
+\autopilot{} executes a repeated observe--decide--act--record loop. Health probes and SMART-like counters update a per-device risk view. Persistent controller state keeps risk streaks, healthy streaks, previous drain attempts, action cooldowns, incremental scrub and rebalance cursors, and aggregate outcome statistics. The controller then derives a bounded action plan from the current observations, durable state, and policy.
+
+\begin{algorithm}[t]
+  \caption{One \autopilot{} control iteration}
+  \label{alg:autopilot}
+  \begin{algorithmic}[1]
+    \Require File-system state $F$, persistent controller state $S$, policy $P$
+    \State $O \gets \Call{Observe}{F}$
+    \State $S \gets \Call{UpdateRiskMemory}{S, O}$
+    \If{$\Call{MetadataConflict}{O}$}
+      \State \Return $\Call{RecordObserveOnly}{S}$
+    \EndIf
+    \State $B \gets \Call{BackgroundBudget}{O, S, P}$
+    \State $A \gets \Call{PlanSafeActions}{F, O, S, P, B}$
+    \ForAll{$a \in A$}
+      \State $r \gets \Call{ExecuteBounded}{F, a}$
+      \State $S \gets \Call{RecordOutcome}{S, a, r}$
+      \If{$r$ reports a metadata conflict}
+        \State \textbf{break}
+      \EndIf
+    \EndFor
+    \State \Call{Persist}{$S$}
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Evidence accumulation}
+A single moderate-risk observation is insufficient to trigger an invasive transition. The controller records consecutive risky and healthy observations and requires configurable confirmation before a drain. Critical risk can be handled more aggressively, while healthy observations clear stale streaks gradually. This mechanism targets false-positive and transient signals without requiring a particular prediction model.
+
+\subsection{Safety gates and cooldowns}
+Before draining a device, the controller checks whether the remaining online devices can still satisfy the recovery requirement. Successful and failed drain attempts create cooldown windows, and each control iteration has a drain budget. These mechanisms prevent repeated or cascading actions from turning a recoverable condition into an availability failure.
+
+\subsection{Foreground-aware maintenance budgets}
+Scrub, rebalance, and drain share storage bandwidth with foreground requests. The controller converts user policy and observed foreground pressure into an effective maintenance budget. Safe and balanced modes reduce the budget as foreground latency exceeds its target; explicit latency, load-average, and read/write limits can pause background work completely. The controller also records action outcomes so that future budgets can be reduced after repeated failures or increased when bounded work remains useful.
+
+\subsection{Policy modes}
+The policy surface exposes four modes. In \emph{Observe} mode, mutating maintenance is disabled; \emph{Safe} is the conservative default; \emph{Balanced} permits more maintenance while retaining feedback and safety gates; and \emph{Aggressive} relaxes performance-oriented throttling without bypassing structural data-safety checks. User intent is therefore separated from the health and repair mechanisms themselves.

@@ -1,111 +1,64 @@
-# LaTeX Paper Template
+# ArgosFS Autopilot
 
-[![Paper CI](https://github.com/fwerkor/latex-paper-template/actions/workflows/ci.yml/badge.svg)](https://github.com/fwerkor/latex-paper-template/actions/workflows/ci.yml)
-[![Online PDF](https://img.shields.io/badge/PDF-online%20preview-2563eb)](https://fwerkor.github.io/latex-paper-template/)
+**Paper:** *ArgosFS Autopilot: Safe Closed-Loop Autonomous Maintenance for Resilient File Systems*
 
-A reusable, CI-first academic paper repository. Every push and pull request compiles the paper, checks references and citations, validates the resulting PDF, and uploads downloadable build artifacts. Every commit to `main` also publishes a stable browser preview through GitHub Pages.
+This repository contains the LaTeX source for the ArgosFS Autopilot preprint. The paper studies how a resilient file system can turn imperfect device-health observations into autonomous maintenance actions without violating redundancy constraints or overwhelming foreground I/O.
 
-## Use this template
+The manuscript is organized around:
 
-1. Select **Use this template** on GitHub and create a repository.
-2. Edit `metadata.tex`, then replace the placeholder section files under `sections/`.
-3. Review the two switches in `preview-config.json`.
-4. Update the repository-specific badge and Pages URL in this README.
-5. In **Settings → Pages**, select **GitHub Actions** as the source if GitHub does not enable it automatically.
-6. Push a commit. The PDF becomes available from both the workflow run and, by default, the Pages site.
+- persistent risk memory and confirmation/cooldown gates for noisy health signals;
+- redundancy-aware and conflict-aware safety checks before mutating maintenance;
+- unified observe, scrub, rebalance, and proactive-drain decisions;
+- foreground-latency and background-I/O feedback for bounded maintenance;
+- evaluation against reactive, periodic, fixed-threshold, and oracle policies;
+- trace replay, device-mapper fault injection, mounted workloads, QEMU, and component ablations.
 
-## Online preview and downloads
+The current version is an initial research scaffold. It describes the implemented mechanism and the evaluation protocol, but does not yet claim final quantitative experimental results.
 
-For this repository:
+## Build
 
-- Stable browser preview: <https://fwerkor.github.io/latex-paper-template/>
-- Direct PDF: <https://fwerkor.github.io/latex-paper-template/paper.pdf>
-- Per-commit artifacts: open the latest **Paper CI** run and download the `paper-*` artifact
-- Tagged releases: push a tag such as `v1.0.0`; the release workflow attaches the PDF, source archive, and checksums
-
-The Pages preview tracks the latest successful build from `main`. Pull requests do not replace the public preview; their PDFs remain isolated as workflow artifacts.
-
-## Preview controls
-
-Edit `preview-config.json`:
-
-```json
-{
-  "enable_public_preview": true,
-  "block_search_indexing": true
-}
+```bash
+make build
 ```
 
-| Setting | Default | Effect |
-| --- | --- | --- |
-| `enable_public_preview` | `true` | Publishes the latest `main` PDF through GitHub Pages. Setting it to `false` deploys a disabled notice without `paper.pdf`, replacing the currently published PDF on the next successful run. |
-| `block_search_indexing` | `true` | Adds page-level `noindex`, `nofollow`, `noarchive`, and related directives, and publishes a `robots.txt` that disallows all crawlers. Setting it to `false` publishes an `Allow: /` rule and removes the page-level robots directives. |
+The PDF is written to `build/paper.pdf`.
 
-Crawler blocking is advisory and is not access control. Anyone who knows the Pages URL can still open the PDF while public preview is enabled. Disabling public preview removes the PDF from future Pages deployments, but it cannot revoke copies that were previously downloaded or cached elsewhere. Per-commit workflow artifacts continue to be produced regardless of these switches.
+For structural and PDF validation:
+
+```bash
+make check
+```
+
+For an arXiv-ready source bundle:
+
+```bash
+make dist
+```
 
 ## Repository layout
 
 ```text
-paper.tex                 Entry point
-metadata.tex              Title, authors, anonymity, and PDF metadata
-config/                    Packages and custom commands
-sections/                  One file per paper section
-tables/                    Standalone table fragments
-figures/                   Figures and editable figure sources
-references.bib             BibTeX database
-preview-config.json        Public preview and crawler-indexing switches
+paper.tex                 Root document
+metadata.tex              Title and author metadata
+sections/                 Manuscript sections
+figures/                  Figure sources
+config/                   LaTeX packages and commands
+tables/                   Evaluation tables
+references.bib             Bibliography
 scripts/                   Build and validation utilities
-.github/workflows/         CI, Pages deployment, and release automation
 ```
 
-## Local development
+## Status
 
-A recent TeX Live installation with `latexmk` is recommended.
+- Repository visibility: public
+- Public PDF preview: enabled through GitHub Pages
+- Scope of v1: safe closed-loop maintenance in ArgosFS
+- Final quantitative evaluation: pending publication experiments
 
-```bash
-make build      # build/paper.pdf
-make watch      # rebuild continuously
-make check      # compile plus structural/log/PDF/preview checks
-make test       # validate preview switches without rebuilding the paper
-make lint       # codespell and ChkTeX
-make clean
-```
+## Related implementation
 
-The PDF validator requires `pypdf`; linting additionally uses `codespell` and `chktex`:
-
-```bash
-python3 -m pip install --user pypdf codespell
-```
-
-On Debian or Ubuntu:
-
-```bash
-sudo apt-get install latexmk lmodern texlive-latex-extra texlive-science \
-  texlive-fonts-recommended texlive-bibtex-extra chktex lacheck
-```
-
-## CI behavior
-
-`Paper CI` runs on every push, pull request, and manual dispatch. It performs:
-
-- repository and `\input`/bibliography structure validation;
-- GitHub Actions schema, expression, and embedded-shell validation with actionlint;
-- spelling checks for source and documentation;
-- ChkTeX and LaCheck static analysis;
-- reproducible compilation with a pinned GitHub Action revision and TeX Live 2025;
-- failure on unresolved references, citations, duplicate labels, missing files, and fatal TeX diagnostics;
-- PDF integrity, metadata, encryption, size, and page-count checks;
-- upload of the PDF, log, bibliography output, and SyncTeX data as a per-commit artifact;
-- upload of diagnostics even when compilation fails.
-
-`Publish PDF` reads `preview-config.json`, then either deploys the latest `main` PDF with the selected crawler policy or replaces the site with a preview-disabled notice. `Release paper` creates a GitHub Release for `v*` tags. Dependabot proposes updates for GitHub Actions each week.
-
-## Adapting to a conference template
-
-Replace `\documentclass` and packages in `paper.tex`/`config/packages.tex` with the venue files. Keep `paper.tex` as the root file, or update `ROOT`, workflow `root_file`, and scripts consistently. Commit required `.cls`, `.sty`, and bibliography-style files when redistribution is permitted.
-
-For double-blind review, leave `\anonymoustrue` enabled in `metadata.tex`. Before a camera-ready release, switch to `\anonymousfalse`, fill in authors and affiliations, remove visible TODO markers, and inspect the PDF artifact.
+The implementation evaluated by this manuscript is maintained in `fwerkor/ArgosFS`.
 
 ## License
 
-The repository infrastructure and placeholder content are available under the MIT License. Replace the license when the venue, publisher, or project requires different terms.
+Repository infrastructure is derived from `fwerkor/latex-paper-template`. See `LICENSE` for the current license terms.

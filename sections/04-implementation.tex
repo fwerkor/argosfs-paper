@@ -1,0 +1,12 @@
+\section{Implementation in ArgosFS}
+\label{sec:implementation}
+
+\autopilot{} is implemented in the \argosfs{} control and volume layers. The public policy object contains the operating mode, a drain-rate limit, degraded-boot preference, background-I/O limits, placement constraints, and path classes. Invalid rates, thresholds, copy counts, and unsafe policy paths are rejected when the policy is loaded.
+
+The runtime state is versioned and persisted separately from the file-system metadata. It records run timestamps, probe/SMART/scrub/rebalance timestamps, incremental cursors, per-disk risk memory, cooldown information, and per-action statistics. Corrupt controller state is reset conservatively and reported rather than silently trusted.
+
+The current safe defaults probe devices hourly, refresh SMART-like health every ten minutes, scrub every five minutes, and consider rebalance every ten minutes. Moderate predicted failures require repeated confirmation; drain attempts are bounded to one per control iteration by default. Scrub and rebalance are incremental, with explicit file budgets, so the controller need not monopolize the file system to make progress.
+
+Mutating maintenance uses the same metadata-conflict protection as other \argosfs{} operations. If a probe, refresh, drain, scrub, or rebalance observes a conflicting metadata transition, \autopilot{} stops subsequent mutations in that iteration. Operators can inspect the planned decisions without mutation through the dry-run and explanation interfaces, and the generic deployment includes a systemd service for repeated execution.
+
+The implementation and experiment drivers are maintained in the public \argosfs{} repository. The paper repository contains only manuscript sources; experiment outputs intended for publication will retain the commit, configuration, and random seed required for replay.

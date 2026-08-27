@@ -1,10 +1,9 @@
-% Toggle anonymous review mode here.
+% arXiv preprint mode: authors are visible.
 \newif\ifanonymous
-\anonymoustrue
-% \anonymousfalse
+\anonymousfalse
 
-\newcommand{\papertitle}{A Reproducible Research Paper Template}
-\newcommand{\papershorttitle}{Reproducible Paper Template}
+\newcommand{\papertitle}{ArgosFS Autopilot: Safe Closed-Loop Autonomous Maintenance for Resilient File Systems}
+\newcommand{\papershorttitle}{ArgosFS Autopilot}
 
 \title{\papertitle}
 
@@ -12,21 +11,17 @@
   \author{Anonymous Authors}
 \else
   \author{%
-    First Author\\
-    Department or Institution\\
-    \texttt{first.author@example.com}
-    \and
-    Second Author\\
-    Department or Institution\\
-    \texttt{second.author@example.com}
+    Yuhang Cao\\
+    Nanjing University\\
+    \texttt{caoyuhang@smail.nju.edu.cn}
   }
 \fi
 
-\date{}
+\date{August 2026}
 
 \hypersetup{%
   pdftitle={\papertitle},
-  pdfauthor={\ifanonymous Anonymous Authors\else First Author and Second Author\fi},
-  pdfsubject={Academic research paper},
-  pdfkeywords={research, reproducibility, LaTeX}
+  pdfauthor={\ifanonymous Anonymous Authors\else Yuhang Cao\fi},
+  pdfsubject={Safe autonomous maintenance for resilient file systems},
+  pdfkeywords={file systems, autonomous storage, self-healing storage, proactive repair, scrubbing, rebalancing, failure prediction}
 }

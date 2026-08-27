@@ -1,0 +1,4 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper studies autonomous file-system maintenance as a safety-constrained feedback problem rather than a collection of independent repair commands. The controller combines persistent evidence, conservative action gates, bounded maintenance, foreground feedback, and outcome history to coordinate scrub, rebalance, and proactive drain inside \argosfs. The evaluation framework is designed to test the central claim directly: compared with reactive, periodic, and fixed-threshold control, a closed-loop controller should reduce risk exposure and unnecessary maintenance without creating unsafe transitions or excessive foreground tail latency.

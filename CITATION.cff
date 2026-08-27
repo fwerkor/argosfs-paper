@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use or reference this manuscript, please cite the paper below."
+title: "ArgosFS Autopilot paper source"
+type: software
+authors:
+  - family-names: Cao
+    given-names: Yuhang
+repository-code: "https://github.com/fwerkor/argosfs-paper"
+url: "https://github.com/fwerkor/argosfs-paper"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Cao
+      given-names: Yuhang
+  title: "ArgosFS Autopilot: Safe Closed-Loop Autonomous Maintenance for Resilient File Systems"
+  year: 2026
+  url: "https://github.com/fwerkor/argosfs-paper"

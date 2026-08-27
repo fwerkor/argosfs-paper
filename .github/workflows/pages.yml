@@ -62,7 +62,7 @@ jobs:
           python3 scripts/generate_preview.py \
             --pdf build/paper.pdf \
             --output public \
-            --title "LaTeX Paper Preview" \
+            --title "ArgosFS Autopilot" \
             --repository "$GITHUB_REPOSITORY" \
             --sha "$GITHUB_SHA" \
             --public-preview-enabled "$ENABLE_PUBLIC_PREVIEW" \

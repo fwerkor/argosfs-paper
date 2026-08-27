@@ -1,0 +1,14 @@
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+\paragraph{Controller versus predictor.}
+The design intentionally does not depend on a learned failure predictor. This keeps the controller applicable to SMART-derived risk, direct I/O-error observations, latency anomalies, or an external predictor, but it also means the quality of proactive action remains bounded by the information available to the file system.
+
+\paragraph{Empirical rather than formal safety.}
+Redundancy checks, confirmation gates, cooldowns, and conflict stopping encode concrete safety rules, but the current implementation is not a formally verified controller. Large randomized traces can bound observed violation rates; they do not constitute a proof over all possible executions.
+
+\paragraph{Single-system implementation.}
+The implementation is evaluated in \argosfs. The controller abstractions are intentionally separated from the file-system-specific repair primitives, but portability to a second production file system remains future evidence rather than a current claim.
+
+\paragraph{Scope of the preprint.}
+The paper focuses on autonomous maintenance decisions and their interference with foreground I/O. It does not attempt to outperform specialized disk-failure prediction models or specialized repair schedulers on their own objectives.

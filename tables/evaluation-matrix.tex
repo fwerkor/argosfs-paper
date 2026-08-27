@@ -1,0 +1,17 @@
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Controller policies used in the planned evaluation. The fixed-threshold baseline isolates the value of closed-loop control from the availability of a health signal.}
+  \label{tab:baselines}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    Policy & Health & Memory & Gates & Feedback \\
+    \midrule
+    Reactive        & No  & No  & N/A & No \\
+    Periodic        & No  & No  & Basic & No \\
+    Fixed threshold & Yes & No  & Basic & No \\
+    \autopilot{}      & Yes & Yes & Yes & Yes \\
+    Oracle           & Future & N/A & Yes & Ideal \\
+    \bottomrule
+  \end{tabular}
+\end{table}

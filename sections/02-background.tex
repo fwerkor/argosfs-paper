@@ -1,15 +1,23 @@
-\section{Background and Motivation}
+\section{Background and Problem Formulation}
 \label{sec:background}
 
-Define the concepts, notation, and assumptions required by the method. Prefer precise notation over informal descriptions when ambiguity would affect the argument. For example, let $x \in \mathcal{X}$ denote an input and let $f_{\theta}$ be a model parameterized by $\theta$.
+\subsection{Maintenance actions and uncertain observations}
+A resilient file system maintains redundancy across devices or failure domains and performs background work to preserve that redundancy. We consider four controller actions: \emph{observe}, \emph{scrub}, \emph{rebalance}, and \emph{drain}. The first is non-mutating; the remaining actions consume I/O and can rewrite data or metadata.
 
-The empirical risk on a dataset $\mathcal{D}$ can be written as
+At control step $t$, the file system receives an observation $o_t$ containing device-health signals and foreground-load measurements. The observation is not assumed to identify future failures perfectly. Instead, the controller maintains persistent state $s_t$ and selects an action
 \begin{equation}
-  \mathcal{L}(\theta; \mathcal{D})
-  = \frac{1}{|\mathcal{D}|}
-    \sum_{(x,y) \in \mathcal{D}}
-    \ell\!\left(f_{\theta}(x), y\right).
-  \label{eq:empirical-risk}
+  a_t = \pi(o_t, s_t, p),
+  \label{eq:policy}
 \end{equation}
+where $p$ is a user policy that defines the allowed aggressiveness and background-I/O constraints.
 
-Use this section to motivate the design choices introduced later rather than duplicating the related-work discussion.
+\subsection{Safety before utility}
+The controller must satisfy safety invariants before optimizing maintenance progress. A drain is admissible only when the post-action layout retains sufficient online redundancy. A detected metadata conflict stops further mutations in the current control iteration. Repeated risk observations and cooldown intervals limit reactions to transient or repeated signals. These gates make the controller fail toward observation rather than toward an irreversible action.
+
+\subsection{Effectiveness and interference}
+A proactive controller is useful only if it reduces the time and amount of data exposed to elevated risk without simply shifting the cost to applications. We therefore separate two objectives. First, risk exposure can be summarized by
+\begin{equation}
+  E = \int R(t) B_{\mathrm{exposed}}(t)\,dt,
+  \label{eq:risk-exposure}
+\end{equation}
+where $R(t)$ is a normalized risk signal and $B_{\mathrm{exposed}}(t)$ is the amount of data affected by the risky failure domain. Second, foreground cost is measured using throughput and tail latency while maintenance is active. The evaluation asks whether closed-loop control improves the joint tradeoff rather than only one side of it.

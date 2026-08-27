@@ -1,0 +1,11 @@
+\section{Related Work}
+\label{sec:related-work}
+
+\paragraph{Autonomic storage management.}
+Hippodrome frames storage administration as an iterative observe--redesign--migrate loop driven by workload requirements \citep{anderson2002hippodrome}. Our controller shares the closed-loop view but targets online reliability maintenance inside a file system, where uncertain health signals and destructive maintenance actions introduce explicit safety constraints.
+
+\paragraph{Disk-failure prediction.}
+Large-scale studies have shown that SMART and operational features can predict a useful subset of disk failures \citep{lu2020smarter}. Our contribution is not a new predictor. We instead treat prediction as an uncertain observation source and studies how a controller should accumulate evidence and act safely when those observations are imperfect.
+
+\paragraph{Proactive repair.}
+FastPR accelerates proactive repair in erasure-coded storage by combining migration and reconstruction and parallelizing repair work \citep{li2022fastpr}. Such work optimizes how repair proceeds once a soon-to-fail device has been identified. Our work addresses the complementary control problem of when a file system should observe, scrub, rebalance, or drain and how much background work it should permit under current redundancy and foreground pressure.
