@@ -1,0 +1,17 @@
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Design requirements and the corresponding \autopilot{} mechanisms.}
+  \label{tab:design-properties}
+  \begin{tabularx}{\columnwidth}{@{}p{0.24\columnwidth}X@{}}
+    \toprule
+    Requirement & Mechanism \\
+    \midrule
+    No action from one noisy sample & Persistent risk streak and configurable confirmation; critical evidence is handled separately. \\
+    Unsafe states fail closed & Drain survivability precondition; placement eligibility; mutation chain stops on metadata conflict. \\
+    Maintenance is interruptible & File-bounded scrub/rebalance windows and durable cursors. \\
+    Foreground work has priority & Latency/load feedback reduces or pauses per-cycle background budget. \\
+    Decisions are auditable & Dry-run explanation, JSON action records, persistent outcome statistics, post-action verification. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}

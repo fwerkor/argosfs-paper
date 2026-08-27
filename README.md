@@ -2,18 +2,19 @@
 
 **Paper:** *ArgosFS Autopilot: Safe Closed-Loop Autonomous Maintenance for Resilient File Systems*
 
-This repository contains the LaTeX source for the ArgosFS Autopilot preprint. The paper studies how a resilient file system can turn imperfect device-health observations into autonomous maintenance actions without violating redundancy constraints or overwhelming foreground I/O.
+This repository contains the LaTeX source for the ArgosFS Autopilot preprint. The manuscript studies a safety-first file-system controller that turns imperfect device-health observations into bounded scrub, rebalance, and proactive-drain actions.
 
-The manuscript is organized around:
+The draft is complete at the method/design level. It includes:
 
-- persistent risk memory and confirmation/cooldown gates for noisy health signals;
-- redundancy-aware and conflict-aware safety checks before mutating maintenance;
-- unified observe, scrub, rebalance, and proactive-drain decisions;
-- foreground-latency and background-I/O feedback for bounded maintenance;
-- evaluation against reactive, periodic, fixed-threshold, and oracle policies;
-- trace replay, device-mapper fault injection, mounted workloads, QEMU, and component ablations.
+- problem formulation and explicit safety envelope;
+- persistent evidence, confirmation, hysteresis, and cooldown design;
+- safe drain, incremental scrub/rebalance, foreground-pressure feedback, and outcome history;
+- implementation details and current prototype limitations;
+- a related-work comparison spanning autonomic storage, proactive fault tolerance, scrub scheduling, reliability coordination, and maintenance I/O scheduling;
+- a frozen RQ1--RQ4 evaluation protocol with baselines, metrics, trace generation, hardware setup, and statistical rules;
+- explicit placeholders only for final quantitative values and result plots.
 
-The current version is an initial research scaffold. It describes the implemented mechanism and the evaluation protocol, but does not yet claim final quantitative experimental results.
+No final performance or reliability effect size is claimed until the corresponding experiment artifact has been produced.
 
 ## Build
 
@@ -29,7 +30,7 @@ For structural and PDF validation:
 make check
 ```
 
-For an arXiv-ready source bundle:
+For an arXiv-ready source bundle after results are filled:
 
 ```bash
 make dist
@@ -41,9 +42,9 @@ make dist
 paper.tex                 Root document
 metadata.tex              Title and author metadata
 sections/                 Manuscript sections
-figures/                  Figure sources
+figures/                  Method figure sources
 config/                   LaTeX packages and commands
-tables/                   Evaluation tables
+tables/                   Design, configuration, and result tables
 references.bib             Bibliography
 scripts/                   Build and validation utilities
 ```
@@ -52,8 +53,9 @@ scripts/                   Build and validation utilities
 
 - Repository visibility: public
 - Public PDF preview: enabled through GitHub Pages
-- Scope of v1: safe closed-loop maintenance in ArgosFS
-- Final quantitative evaluation: pending publication experiments
+- Non-result manuscript content: complete draft
+- Quantitative result tables/plots: explicit placeholders
+- Scope: current Autopilot CLI on the ArgosFS host-volume backend; block-backend fault behavior is treated separately as substrate validation
 
 ## Related implementation
 

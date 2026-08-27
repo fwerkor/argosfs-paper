@@ -1,14 +1,26 @@
 \section{Discussion and Limitations}
 \label{sec:discussion}
 
-\paragraph{Controller versus predictor.}
-The design intentionally does not depend on a learned failure predictor. This keeps the controller applicable to SMART-derived risk, direct I/O-error observations, latency anomalies, or an external predictor, but it also means the quality of proactive action remains bounded by the information available to the file system.
+\paragraph{The predictor is replaceable.}
+The built-in risk score is deliberately simple and should not be read as a claim that its thresholds are optimal across drive models. The controller consumes the score as evidence and adds persistence, urgency classes, admissibility checks, and execution feedback. A learned predictor, vendor health service, or administrator signal can replace the current adapter. The evaluation therefore gives the fixed-threshold baseline the same evidence stream and separately sweeps observation quality.
 
-\paragraph{Empirical rather than formal safety.}
-Redundancy checks, confirmation gates, cooldowns, and conflict stopping encode concrete safety rules, but the current implementation is not a formally verified controller. Large randomized traces can bound observed violation rates; they do not constitute a proof over all possible executions.
+\paragraph{Safety is layered, not absolute.}
+The paper's safety claim is narrower than a statement that Autopilot cannot lose data. The enforced drain rule checks that enough other online devices exist for the widest active layout; placement rejects unavailable/excluded devices; metadata conflicts stop later controller mutations; maintenance windows are bounded. These properties prevent specific classes of maintenance-induced error. They cannot protect against undetected corruption in all surviving shards, correlated failures beyond the code's tolerance, firmware bugs, kernel bugs, or power loss outside the guarantees of the underlying journal and storage stack. RQ1 provides empirical evidence for the stated properties, not a proof of arbitrary system safety.
 
-\paragraph{Single-system implementation.}
-The implementation is evaluated in \argosfs. The controller abstractions are intentionally separated from the file-system-specific repair primitives, but portability to a second production file system remains future evidence rather than a current claim.
+\paragraph{Failure domains need stronger end-to-end enforcement.}
+The data plane prefers different failure domains when placing shards, and host probes infer a domain from the backing file system. The current proactive-drain gate, however, is expressed in available-device count and active layout width. A stronger controller would compute survivability directly over failure-domain sets and would reject transitions that preserve enough devices but collapse domain diversity. We leave this extension out of the present claims rather than treating placement preference as a formal drain invariant.
 
-\paragraph{Scope of the preprint.}
-The paper focuses on autonomous maintenance decisions and their interference with foreground I/O. It does not attempt to outperform specialized disk-failure prediction models or specialized repair schedulers on their own objectives.
+\paragraph{Foreground feedback is coarse.}
+The controller's latency signal is a per-device EWMA/health proxy, not an application P99 estimator, and configured MiB/s caps currently map to work-unit ceilings rather than byte-accurate pacing. The design still allows a useful question---whether a small feedback signal beats fixed windows at equal completed work---but the mechanism should not be confused with a full I/O scheduler. Declarative or deadline-aware scheduling such as DINGO \citep{athlur2026declarative}, cgroup I/O control, or a token-bucket executor could provide a stronger actuator under the same safety/evidence layer.
+
+\paragraph{The current controller is host-backend only.}
+\autopilot{} is not yet wired to the block-backed root-pool selector. This limits the deployment claim: the prototype demonstrates the controller against real \argosfs{} FUSE and maintenance paths, while raw/root fault semantics are validated separately. Extending the command to loop/raw pools requires careful treatment of device discovery, degraded mounting, and boot-time policy. We view this as engineering needed before production root-filesystem deployment, not as an experiment result that can be hidden by using the host backend.
+
+\paragraph{Reserved policy fields are not evaluated.}
+The schema already names boot-critical path classes, cold candidates, preferred tiers, minimum boot copies, and failure-domain-aware intent, but the current planner does not consume those fields. They are excluded from the contribution and evaluation. A future policy engine could use them to make placement/redundancy objectives explicit, provided those objectives remain subordinate to safety checks.
+
+\paragraph{Controller stability.}
+Confirmation and cooldown are simple hysteresis. They do not guarantee optimal control under arbitrary oscillating workloads, nor do the heuristic utility values define a globally optimal objective. This is intentional: the first version favors transparent state transitions that can be explained from logs. RQ4 tests whether the simple mechanisms suppress the oscillations they are designed to suppress. If more sophisticated control is later justified, the same evaluation should require it to beat these interpretable baselines.
+
+\paragraph{Generalization beyond ArgosFS.}
+The design depends on a small set of storage-system hooks: health observations, an explicit set of mutating maintenance primitives, a way to test structural preconditions, bounded/resumable execution, foreground-pressure telemetry, and durable controller state. These hooks exist in different forms in RAID managers, object stores, and distributed storage systems. The concrete invariants and actions are file-system specific, but the pattern---uncertain evidence $\rightarrow$ safety envelope $\rightarrow$ bounded action $\rightarrow$ verified feedback---is intended to generalize.

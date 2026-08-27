@@ -1,0 +1,21 @@
+\begin{tikzpicture}[
+  node distance=8mm and 12mm,
+  every node/.style={font=\small,align=center},
+  box/.style={draw,rounded corners=1pt,minimum height=8mm,inner xsep=6pt},
+  arrow/.style={-{Latex[length=2mm]},thick}
+]
+\node[box] (obs) {Health, latency,\\capacity, metadata};
+\node[box,right=of obs] (mem) {Persistent evidence\\and action history};
+\node[box,right=of mem] (safe) {Safety envelope\\and cooldown gates};
+\node[box,right=of safe] (plan) {Action choice\\and work budget};
+\node[box,right=of plan] (exec) {Bounded executor\\scrub / rebalance / drain};
+\node[box,below=10mm of plan] (verify) {Verify, record outcome, persist cursor};
+
+\draw[arrow] (obs) -- (mem);
+\draw[arrow] (mem) -- (safe);
+\draw[arrow] (safe) -- (plan);
+\draw[arrow] (plan) -- (exec);
+\draw[arrow] (exec) |- (verify);
+\draw[arrow] (verify.west) -| (mem.south);
+\draw[arrow] (verify.east) -| (obs.south);
+\end{tikzpicture}

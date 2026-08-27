@@ -1,40 +1,100 @@
 \section{Autopilot Design}
 \label{sec:design}
 
-\subsection{Closed-loop controller}
-\autopilot{} executes a repeated observe--decide--act--record loop. Health probes and SMART-like counters update a per-device risk view. Persistent controller state keeps risk streaks, healthy streaks, previous drain attempts, action cooldowns, incremental scrub and rebalance cursors, and aggregate outcome statistics. The controller then derives a bounded action plan from the current observations, durable state, and policy.
+\begin{figure*}[t]
+  \centering
+  \resizebox{0.96\textwidth}{!}{\input{figures/autopilot-overview}}
+  \caption{One \autopilot{} control loop. Uncertain observations update durable evidence; structural checks define an admissible action set; the planner chooses an action and bounded work budget; execution is followed by verification and persistent feedback. Safety checks precede utility heuristics.}
+  \label{fig:autopilot-overview}
+\end{figure*}
+
+\input{tables/design-properties}
+
+\subsection{Control loop}
+\label{sec:control-loop}
+\Cref{fig:autopilot-overview} summarizes the controller. Each cycle first refreshes observations that are due, computes a health report, and updates persistent evidence. It then evaluates drain candidates, scrub, and rebalance in a fixed safety-conscious order. Mutating actions receive a finite work budget. At the end of the cycle the file system verifies consistency, records action outcomes, persists the controller state, and emits an audit record.
 
 \begin{algorithm}[t]
-  \caption{One \autopilot{} control iteration}
+  \caption{Safety-first maintenance cycle}
   \label{alg:autopilot}
   \begin{algorithmic}[1]
-    \Require File-system state $F$, persistent controller state $S$, policy $P$
+    \Require File-system state $F$, controller state $S$, policy $P$
     \State $O \gets \Call{Observe}{F}$
-    \State $S \gets \Call{UpdateRiskMemory}{S, O}$
-    \If{$\Call{MetadataConflict}{O}$}
-      \State \Return $\Call{RecordObserveOnly}{S}$
+    \State $S \gets \Call{UpdateEvidence}{S,O}$
+    \If{$P$ is observe-only}
+      \State \Return \Call{PersistAndExplain}{$S,O$}
     \EndIf
-    \State $B \gets \Call{BackgroundBudget}{O, S, P}$
-    \State $A \gets \Call{PlanSafeActions}{F, O, S, P, B}$
-    \ForAll{$a \in A$}
-      \State $r \gets \Call{ExecuteBounded}{F, a}$
-      \State $S \gets \Call{RecordOutcome}{S, a, r}$
-      \If{$r$ reports a metadata conflict}
+    \State $A \gets \Call{SafeCandidates}{F,O,S,P}$
+    \ForAll{$a \in \Call{PriorityOrder}{A}$}
+      \State $b \gets \Call{Budget}{a,O,S,P}$
+      \If{$b>0$}
+        \State $r \gets \Call{ExecuteBounded}{a,b}$
+        \State $S \gets \Call{RecordOutcome}{S,a,r}$
+      \EndIf
+      \If{a metadata conflict was observed}
         \State \textbf{break}
       \EndIf
     \EndFor
-    \State \Call{Persist}{$S$}
+    \State $v \gets \Call{Verify}{F}$
+    \State \Return \Call{PersistAudit}{$S,O,v$}
   \end{algorithmic}
 \end{algorithm}
 
-\subsection{Evidence accumulation}
-A single moderate-risk observation is insufficient to trigger an invasive transition. The controller records consecutive risky and healthy observations and requires configurable confirmation before a drain. Critical risk can be handled more aggressively, while healthy observations clear stale streaks gradually. This mechanism targets false-positive and transient signals without requiring a particular prediction model.
+The order is intentionally not a global optimizer. A predicted-failing online device is considered before routine scrub and skew-driven rebalance because its risk may have a shorter deadline. The controller then refreshes health state after successful drains before planning later maintenance. This simple sequencing makes interactions explicit and keeps every mutation behind the same file-system checks.
 
-\subsection{Safety gates and cooldowns}
-Before draining a device, the controller checks whether the remaining online devices can still satisfy the recovery requirement. Successful and failed drain attempts create cooldown windows, and each control iteration has a drain budget. These mechanisms prevent repeated or cascading actions from turning a recoverable condition into an availability failure.
+\subsection{Persistent evidence and hysteresis}
+\label{sec:evidence}
+A health report alone is insufficient state for autonomous action. For each device $d$, \autopilot{} stores a risky-observation streak $h_d$, a healthy-observation streak, the last risk score, the last failure indication, the previous drain attempt, the next time at which another invasive action is allowed, and a textual last-action state.
 
-\subsection{Foreground-aware maintenance budgets}
-Scrub, rebalance, and drain share storage bandwidth with foreground requests. The controller converts user policy and observed foreground pressure into an effective maintenance budget. Safe and balanced modes reduce the budget as foreground latency exceeds its target; explicit latency, load-average, and read/write limits can pause background work completely. The controller also records action outcomes so that future budgets can be reduced after repeated failures or increased when bounded work remains useful.
+Let $q_t(d)$ denote whether the current observation predicts failure. For a configurable confirmation count $c$, the non-critical drain rule is
+\begin{equation}
+  q_t(d) \land h_t(d) \ge c.
+  \label{eq:confirmation}
+\end{equation}
+The default is $c=2$. A healthy observation increments a separate healthy streak; after two healthy observations, stale risk evidence is cleared. This asymmetry creates hysteresis around the transition rather than allowing one alternating sample to repeatedly drain and recover a device.
 
-\subsection{Policy modes}
-The policy surface exposes four modes. In \emph{Observe} mode, mutating maintenance is disabled; \emph{Safe} is the conservative default; \emph{Balanced} permits more maintenance while retaining feedback and safety gates; and \emph{Aggressive} relaxes performance-oriented throttling without bypassing structural data-safety checks. User intent is therefore separated from the health and repair mechanisms themselves.
+Critical evidence takes a shorter path. In the prototype, risk at or above 0.85 or at least forty recorded I/O errors can trigger the critical branch without waiting for the normal confirmation count. This branch still obeys the structural drain safety checks. Thus confidence changes urgency, not authority.
+
+Cooldowns handle a different instability. After a successful drain, the target receives a default 30-minute action cooldown; after a failed invasive action, the controller defers another attempt for ten minutes. Cooldowns prevent a persistent bad signal from creating a tight rewrite loop and give the next cycle time to observe the changed system.
+
+\subsection{Safety-gated drain}
+\label{sec:safe-drain}
+Drain is the most invasive action because it rewrites every file with a shard on the target. Before execution, the underlying \argosfs{} primitive excludes the target and counts the other online devices. Let
+\begin{equation}
+  W(F)=\max_{\ell \in \mathcal{L}(F)}(k_\ell+m_\ell)
+\end{equation}
+be the widest layout referenced by current or legacy file metadata. Device $d$ is drain-admissible only if
+\begin{equation}
+  |D_{\mathrm{online}}\setminus\{d\}| \ge W(F).
+  \label{eq:drain-precondition}
+\end{equation}
+This matters during online reshape: checking only the current write layout could ignore older stripes that still require a wider placement.
+
+If admissible, drain marks an available target as draining, finds files that reference it, reads each file through the normal reconstruction path, and rewrites it while excluding the target from placement. Per-inode locking prevents the maintenance rewrite from silently overwriting a concurrently committed user write. If the target is already unavailable, reconstruction proceeds from surviving shards without temporarily pretending that the target is online.
+
+\subsection{Incremental scrub and rebalance}
+\label{sec:incremental-maintenance}
+A whole-volume maintenance operation is difficult to schedule because its completion time grows with volume size, so the controller turns scrub and rebalance into resumable windows. State stores an inode cursor for each action. The default scrub window covers at most 128 files per due cycle; the default rebalance window covers at most 32 files. The next cycle resumes from the recorded cursor.
+
+Scrub validates files through the same integrity and erasure-code path used by explicit repair, returning damaged, repaired, unrecoverable, and error counts. Rebalance runs only when placement skew exceeds a default threshold of 0.08. Skew is the maximum of capacity-utilization spread and a normalized used-byte spread. This makes a newly added empty device an immediate rebalance candidate without requiring a separate special case.
+
+The rebalance window has a small outcome-feedback mechanism. The controller keeps an exponentially weighted utility statistic from prior rebalance cycles. Strong positive utility can double the next requested window, persistently negative utility halves it, and the multiplier is bounded. This is deliberately conservative adaptation rather than reinforcement learning: the policy remains inspectable and the safety envelope remains unchanged.
+
+\subsection{Foreground-pressure feedback}
+\label{sec:foreground-feedback}
+Maintenance and applications share the same device queues. The controller therefore computes a foreground-pressure proxy
+\begin{equation}
+  L_t = \max_d \{L^{\mathrm{read}}_d,L^{\mathrm{write}}_d,L^{\mathrm{health}}_d\},
+  \label{eq:latency-proxy}
+\end{equation}
+where the first two terms are per-device latency EWMAs and the third is an operator- or health-derived latency observation. The field in the public policy is named \texttt{target\_foreground\_p99\_ms}; however, the current prototype does \emph{not} estimate an online request-latency percentile. We therefore call $L_t$ a latency proxy throughout the paper and use externally measured true P99/P99.9 latency only in the evaluation.
+
+Safe and balanced modes start from a requested work budget $b$. When $L_t$ exceeds the target, the controller reduces the effective budget to at most half of $b$; above twice the target it reduces the window to at most one work unit. Explicit latency and load-average thresholds can set the budget to zero. Aggressive mode skips the proportional latency reduction but still obeys explicit pause thresholds and structural safety checks. Observe mode sets every mutating budget to zero.
+
+The policy also exposes read/write MiB/s limits. In the present prototype these values are advisory budget hints: they are mapped to an upper bound on per-cycle file or device work units, not enforced by byte-accurate pacing. We evaluate the actual foreground interference produced by this mechanism rather than claiming strict bandwidth isolation. A paced byte-rate executor is future engineering work.
+
+\subsection{Policy modes and explanations}
+\label{sec:policy-modes}
+Four policy modes expose a small operator-facing control surface: \emph{observe} produces decisions without mutations; \emph{safe}, the default, uses the base windows and two-observation confirmation; \emph{balanced} doubles scrub and rebalance windows while retaining confirmation and pressure feedback; and \emph{aggressive} uses one-observation confirmation, quadruples routine windows, and raises the latency target by 50\%. Structural checks remain mandatory in all mutating modes.
+
+A dry-run path executes observation, evidence update in memory, safety checks, and budget planning without committing controller state, file-system metadata, shards, or journal entries. Its JSON output includes chosen and rejected actions, rejection reasons, observed risk, confirmation streak, cooldown state, the online-device safety check, and background-budget decisions. This interface is both an operator tool and an experiment oracle for determining \emph{why} a controller chose an action.

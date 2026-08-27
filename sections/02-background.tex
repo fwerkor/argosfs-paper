@@ -1,23 +1,52 @@
 \section{Background and Problem Formulation}
 \label{sec:background}
 
-\subsection{Maintenance actions and uncertain observations}
-A resilient file system maintains redundancy across devices or failure domains and performs background work to preserve that redundancy. We consider four controller actions: \emph{observe}, \emph{scrub}, \emph{rebalance}, and \emph{drain}. The first is non-mutating; the remaining actions consume I/O and can rewrite data or metadata.
+\subsection{Why maintenance needs a controller}
+A resilient file system has several ways to react to trouble. We use four actions: \emph{scrub} reads stored data, validates integrity, and repairs reconstructable damage; \emph{rebalance} rewrites data to improve placement after capacity or workload changes; \emph{drain} evacuates data from a device before marking it unavailable; and \emph{observe} deliberately changes no data. These operations solve different problems, have different urgency, and consume overlapping storage bandwidth.
 
-At control step $t$, the file system receives an observation $o_t$ containing device-health signals and foreground-load measurements. The observation is not assumed to identify future failures perfectly. Instead, the controller maintains persistent state $s_t$ and selects an action
+Running each operation from an independent threshold or timer ignores their coupling. A periodic scrub can begin during a latency burst; a rebalancer can consume the same capacity needed by a drain; an eager failure predictor can trigger migration from a device that recovers on the next observation. Practical scrubbing work has shown directly that the timing and granularity of background verification can dominate application interference \citep{amvrosiadis2012scrubbing}. The control decision must therefore account for both reliability state and foreground pressure.
+
+\subsection{ArgosFS substrate}
+\label{sec:argosfs-background}
+\argosfs{} is a Rust userspace file system with FUSE mounting, Reed--Solomon erasure coding, checksums, compression, optional encryption, journaling, online device lifecycle operations, and recovery tooling. A file is divided into stripes and encoded according to a layout $(k,m)$, where $k$ data shards and $m$ parity shards are placed on eligible devices. The default layout is $(4,2)$. Placement considers storage tier, configured weight, observed latency, utilization, NUMA locality, and failure-domain identity. Failed, offline, draining, or explicitly excluded devices are not eligible for new placement; when enough distinct failure domains exist, a stripe uses different domains before reusing one.
+
+The implementation has three storage backends. The host backend stores shards in directories and is convenient for FUSE development and non-destructive experiments. Loop and raw-block backends store the same logical shards in block extents and support the root-pool boot path. The logical encoding, checksums, reconstruction, scrub, and most maintenance code are shared above these location-specific layers. The current \autopilot{} CLI is wired to host-volume roots; \cref{sec:prototype-scope} discusses this boundary explicitly.
+
+\subsection{Observations and uncertainty}
+At control cycle $t$, let $O_t$ contain device status, health counters, observed latency and throughput, capacity state, and file-system metadata. Let $S_t$ be durable controller history and $P$ the operator policy. A controller chooses
 \begin{equation}
-  a_t = \pi(o_t, s_t, p),
-  \label{eq:policy}
+  a_t \in \mathcal{A} = \{\textsc{Observe},\textsc{Scrub},\textsc{Rebalance},\textsc{Drain}\}.
+  \label{eq:action-space}
 \end{equation}
-where $p$ is a user policy that defines the allowed aggressiveness and background-I/O constraints.
+Health evidence is intentionally not assumed to be perfect. Classic field studies found useful correlations between SMART counters and failure but also found that SMART alone misses many individual failures \citep{pinheiro2007failure}; later work improved prediction substantially with larger datasets and learned models \citep{lu2020smarter}. Our controller must therefore tolerate false positives, false negatives, missing observations, and transient spikes.
 
-\subsection{Safety before utility}
-The controller must satisfy safety invariants before optimizing maintenance progress. A drain is admissible only when the post-action layout retains sufficient online redundancy. A detected metadata conflict stops further mutations in the current control iteration. Repeated risk observations and cooldown intervals limit reactions to transient or repeated signals. These gates make the controller fail toward observation rather than toward an irreversible action.
+The \argosfs{} prototype computes a deterministic risk score from device status, reallocated and pending sectors, CRC and I/O errors, latency, wear, temperature, and capacity pressure. A score at or above 0.65, eight or more pending sectors, forty or more I/O errors, or an explicit failed status marks a device as predicted-failing. This heuristic is an observation adapter, not a research contribution. The design accepts a stronger predictor as long as it exports a risk estimate and failure indication.
 
-\subsection{Effectiveness and interference}
-A proactive controller is useful only if it reduces the time and amount of data exposed to elevated risk without simply shifting the cost to applications. We therefore separate two objectives. First, risk exposure can be summarized by
+\subsection{Safety envelope}
+\label{sec:safety-envelope}
+The controller separates \emph{admissibility} from \emph{preference}. Define $\mathcal{A}_{\mathrm{safe}}(F_t) \subseteq \mathcal{A}$ as the actions that satisfy the structural checks of file-system state $F_t$. The controller's optimization is lexicographic:
 \begin{equation}
-  E = \int R(t) B_{\mathrm{exposed}}(t)\,dt,
+  a_t = \argmax_{a \in \mathcal{A}_{\mathrm{safe}}(F_t)} U(a \mid O_t,S_t,P),
+  \label{eq:safe-utility}
+\end{equation}
+where utility may be approximate, but an action outside the safe set is never selected for higher utility. In the current implementation the important enforced conditions are:
+\begin{enumerate}[leftmargin=*]
+  \item new shards are placed only on online, capacity-eligible, non-excluded devices;
+  \item before draining device $d$, the number of other online devices must be at least the widest active layout $\max(k+m)$ required by current or legacy stripes;
+  \item a metadata transaction conflict stops later mutating actions in the current controller cycle;
+  \item scrub and rebalance operate in bounded file windows with persistent cursors rather than unbounded whole-volume work;
+  \item after the action phase, the controller runs a consistency verification and records its result.
+\end{enumerate}
+These are implementation-enforced safety properties, not a proof of arbitrary correlated-failure tolerance. In particular, the drain precondition is a device-count/layout-width condition; it does not prove that future failures will respect independent failure domains.
+
+\subsection{Objectives and non-goals}
+The controller has three ordered objectives. First, it should avoid maintenance-induced safety violations. Second, it should reduce the duration and amount of data exposed to elevated device risk. Third, among similarly safe recovery choices, it should reduce unnecessary data movement and foreground interference.
+
+For evaluation, we quantify time-varying risk exposure as
+\begin{equation}
+  E = \int_{t_0}^{t_1} R(t)\,B_{\mathrm{exposed}}(t)\,dt,
   \label{eq:risk-exposure}
 \end{equation}
-where $R(t)$ is a normalized risk signal and $B_{\mathrm{exposed}}(t)$ is the amount of data affected by the risky failure domain. Second, foreground cost is measured using throughput and tail latency while maintenance is active. The evaluation asks whether closed-loop control improves the joint tradeoff rather than only one side of it.
+where $R(t)$ is the risk assigned to an affected failure domain and $B_{\mathrm{exposed}}(t)$ is the logical byte volume whose placement depends on that domain. We also report simpler quantities such as time-to-safe-state and bytes moved so that conclusions do not depend on this composite metric alone.
+
+We do not propose a new disk-failure predictor, erasure code, scrub algorithm, or reconstruction algorithm. We also do not claim to replace operator policy. The contribution is the decision and execution layer that composes these mechanisms safely under uncertain evidence.

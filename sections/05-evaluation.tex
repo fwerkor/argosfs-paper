@@ -1,36 +1,102 @@
 \section{Evaluation}
 \label{sec:evaluation}
 
-The evaluation distinguishes a controller that merely executes maintenance from one that improves the safety--recovery--interference tradeoff. Each randomized failure or workload trace is replayed identically across comparison policies.
+The evaluation is designed to distinguish four questions that are easy to conflate in an autonomous storage system:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{RQ1: Safety under uncertain evidence.} Does the controller avoid unsafe and unnecessary actions when health signals are noisy or transient?
+  \item \textbf{RQ2: Recovery effectiveness.} Does closed-loop control reduce the amount and duration of data exposed to elevated device risk without excessive data movement?
+  \item \textbf{RQ3: Foreground interference.} For comparable completed maintenance work, does feedback reduce application tail-latency impact relative to fixed background budgets?
+  \item \textbf{RQ4: Adaptation and mechanism value.} Which components---confirmation, cooldown, pressure feedback, and outcome feedback---account for the observed behavior under workload and health shifts?
+\end{itemize}
+
+\subsection{Experimental platform}
+The control-plane and mounted-workload experiments run on a dual-socket Intel Xeon Gold 6138 host with 40 physical cores (80 hardware threads) and two NUMA nodes, using Linux 7.0.0-28 on x86-64. The experiment workspace resides on an Intel SSDPELKX960G8D NVMe device. To exercise the host-volume backend with distinct logical failure domains without repartitioning production disks, we create seven independent 16-GiB sparse images, format each as ext4, mount them separately, and use the seven mountpoints as \argosfs{} host disks. Distinct mount device identifiers make them distinct host-backend failure domains. Unless stated otherwise, the file-system layout is $(k,m)=(4,2)$, leaving one additional device available for evacuation and rebalance experiments.
+
+Foreground experiments mount the host volume through the real \argosfs{} FUSE frontend. Every raw artifact records the evaluated software revision. The implementation description in this draft corresponds to \argosfs{} commit \texttt{a52f6d2}; the quantitative release uses one frozen revision for all paired measurements and reports that exact hash.
+
+A separate device-mapper harness uses three loop-backed block devices with a $(2,1)$ layout to inject deterministic \texttt{dm-error} failures and raw data corruption. This harness validates the underlying block error, degraded read, repair, and journal behavior. As described in \cref{sec:prototype-scope}, it is substrate validation rather than a raw-backend \autopilot{} experiment.
+
+\subsection{Health traces and fault traces}
+We use two complementary trace sources. First, deterministic synthetic traces give exact ground truth and allow controlled false-positive, false-negative, stale-sample, and correlated-event rates. A trace contains 240 controller intervals and transitions among healthy operation, isolated spikes, sustained degradation, actual failure, redundancy loss, and recovery. For every operating point we generate 10,000 seeded traces and replay the same seeds across all policies. False-positive probability is swept over $\{0,0.01,0.05,0.10,0.20\}$; independently, observation loss is swept over $\{0,0.05,0.10\}$. Multi-device cases include a second risky device and a state with insufficient online devices for a safe drain.
+
+Second, we replay the Q1 2026 Backblaze Drive Stats release \citep{backblaze2026q1}. We retain fields that map directly to the prototype health adapter, including reallocated-sector, pending-sector, CRC, and temperature observations where available, and use the published failure label as outcome ground truth. The fixed \argosfs{} risk heuristic is not trained on the replay data. This test is therefore intentionally unfavorable to predictor-specific tuning: it asks whether the controller remains well behaved when driven by realistic, incomplete health observations.
+
+For file-system-level fault injection, the deterministic matrix covers critical risk, moderate risk requiring confirmation, insufficient redundancy, cooldown after action, an added empty device that creates skew, and single-shard corruption. Every case verifies post-action consistency and content hashes. Device-mapper tests additionally inject an actual EIO device and byte-level corruption below the file-system interface.
 
 \subsection{Baselines}
 \input{tables/evaluation-matrix}
 
-\paragraph{Reactive.}
-Maintenance begins only after a hard device failure or detected corruption.
+\paragraph{Reactive.} The system does not proactively drain on health evidence. It repairs only after an actual device failure becomes visible. This baseline measures the value of acting before failure.
 
-\paragraph{Periodic.}
-Scrub and rebalance run on fixed schedules with a fixed background budget and no health-dependent action selection.
+\paragraph{Periodic.} Scrub and rebalance run at fixed intervals and fixed windows, while health evidence does not trigger drain. This captures a conventional timer-driven maintenance policy.
 
-\paragraph{Fixed threshold.}
-A health score above a fixed threshold immediately triggers proactive maintenance using a fixed budget. This baseline isolates the value of persistent evidence, cooldowns, safety gates, and load feedback from the value of prediction itself.
+\paragraph{Fixed threshold.} This is the most important baseline. It receives exactly the same risk stream as \autopilot{} and invokes the same maintenance primitives, but a predicted-failure sample immediately triggers a drain attempt, routine work uses fixed windows, and there is no persistent confirmation, cooldown hysteresis, outcome adaptation, or foreground-pressure reduction. It tests whether the proposed controller is more than a threshold wrapped around existing tools.
 
-\paragraph{Oracle.}
-An offline policy with knowledge of the injected future failure time supplies a reference upper bound rather than a deployable baseline.
+\paragraph{Oracle.} The oracle knows injected or labeled failure times in advance, but uses the same file-system safety gates and maintenance primitives. It schedules the earliest safe proactive evacuation that fits the experiment's maintenance budget. The oracle is an upper bound, not a deployable competitor.
 
-\subsection{RQ1: Does Autopilot avoid unsafe or unnecessary actions?}
-We generate deterministic traces containing transient health spikes, sustained degradation, false positives, multiple risky devices, insufficient redundancy, metadata conflicts, EIO, and corruption. The primary metrics are unsafe-action count, data-loss events, availability violations, unnecessary drain rate, and pre-failure protection rate. Large trace-driven runs test decision logic at scale; device-mapper fault injection validates selected traces against real block errors.
+\subsection{Metrics and statistical protocol}
+An \emph{unsafe action} is any controller-issued mutation that violates the experiment's predeclared survivability or consistency condition: draining when the layout-width precondition is false, making previously readable ground-truth data unavailable, or continuing a mutating controller chain after an injected metadata conflict. We separately report \emph{unnecessary drain rate}, the fraction of drained devices whose synthetic risk episode resolves without the ground-truth failure window, and \emph{pre-failure protection rate}, the fraction of predictable failures for which evacuation finishes before the injected failure.
 
-\subsection{RQ2: Does Autopilot reduce risk exposure?}
-We compare the duration and area of elevated-risk states under reactive, periodic, fixed-threshold, \autopilot, and oracle policies. Measurements include time at risk, repair or drain completion time, bytes exposed to the risky failure domain, bytes rewritten, and resulting redundancy. Trace-driven health histories are complemented by controlled faults on the block backend.
+RQ2 reports risk exposure from \cref{eq:risk-exposure}, time from first actionable risk to a safe post-maintenance state, duration in degraded state, repair completion time after actual faults, and logical/physical bytes moved. Each trace is paired across policies. Composite risk exposure is always shown beside the primitive metrics to avoid hiding behavior behind one weighting function.
 
-\subsection{RQ3: Does Autopilot bound foreground interference?}
-Mounted \argosfs{} instances run sequential, random, mixed, and metadata-heavy foreground workloads while scrub, rebalance, or drain is active. We report throughput together with P50, P95, P99, and P99.9 latency. Fixed background budgets are swept across a range of rates to construct a performance--recovery Pareto frontier; \autopilot{} is evaluated at the same completed maintenance work rather than at equal wall-clock time alone.
+RQ3 reports throughput plus P50, P95, P99, and P99.9 request latency measured outside \autopilot{} by the workload generator. Each performance configuration has a 120-second warm-up and 300-second measurement interval and is repeated ten times in randomized policy order. We report medians and 95\% bootstrap confidence intervals; paired policy differences are bootstrapped over matched repetitions. The same maintenance target---files scrubbed, files rebalanced, or bytes evacuated---must complete before comparing foreground cost. A policy that achieves low latency by doing less maintenance is not counted as a win.
 
-\subsection{RQ4: Does closed-loop adaptation matter?}
-A long-running workload changes foreground pressure, device risk, corruption state, and available capacity over time. We record risk score, chosen action, effective maintenance budget, foreground tail latency, and recovery progress. Ablations remove confirmation, cooldown, foreground-aware throttling, adaptive action history, persistent risk memory, and conflict stopping one component at a time.
+When a safety experiment observes zero violations in $N$ independent seeded traces, we additionally report the conventional rule-of-three 95\% upper bound $3/N$ as an interpretable empirical bound. We do not call this a formal proof.
 
-\subsection{Experimental layers and statistics}
-The study uses three layers: large deterministic trace replay for statistical coverage, Linux device-mapper and loop devices for real EIO/corruption behavior, and FUSE/QEMU execution for mounted and root-file-system behavior. Performance configurations are repeated and reported with medians and 95\% bootstrap confidence intervals. Tail-latency claims are computed from sufficiently large I/O samples rather than phase-level aggregates. Randomized experiments retain seeds and raw machine-readable records.
+\subsection{RQ1: Safety under noisy observations}
+Synthetic traces stress three controller boundaries: a one-sample spike that should not trigger a normal drain, sustained evidence that should eventually trigger action, and a genuine high-risk event while the remaining online-device count is too small for evacuation. We also inject metadata conflicts during mutating maintenance and verify that later mutations in that cycle stop. Backblaze replay tests whether the same mechanisms remain stable on non-synthetic SMART sequences.
 
-The existing \argosfs{} repository already contains smoke-level Autopilot scenarios and block-fault injection. Those tests establish implementation correctness but are not treated as the final performance evidence for this paper; the publication experiments use the stricter protocol above.
+\input{tables/result-safety}
+
+The primary comparison is fixed threshold versus full \autopilot{}. If confirmation works as intended, threshold control should react more often to transient risk, while \autopilot{} should wait through isolated spikes but still protect sustained/critical cases. The structural safety gate should make both the full controller and the oracle refuse an inadmissible drain even when the health signal is certain.
+
+\resulttext{report the unsafe-action count and empirical upper bound, unnecessary-drain reduction versus fixed threshold, and any change in pre-failure protection.}
+
+\subsection{RQ2: Recovery effectiveness}
+RQ2 separates \emph{acting early} from \emph{acting efficiently}. Reactive repair begins only at failure and therefore establishes the cost of waiting. Fixed threshold acts early but may move data for false alarms. Periodic maintenance can discover corruption but is not synchronized with device risk. Full \autopilot{} should occupy the middle ground: early enough to shorten risk exposure while avoiding migrations that are not justified by persistent evidence.
+
+\input{tables/result-effectiveness}
+
+For controlled corruption, we inject one shard corruption, disable the L2 cache so reads cannot mask it, and allow the incremental scrub path to detect and reconstruct it. For proactive drain, content hashes are checked before and after evacuation. For actual EIO, the block harness verifies degraded reads before device restoration and final scrub/fsck consistency after restoration.
+
+\resulttext{report normalized risk exposure, time-to-safe-state, repair/degraded duration, and bytes moved, including the gap between Autopilot and the oracle.}
+
+\subsection{RQ3: Foreground interference}
+We run three FUSE workloads: (1) 4-KiB random read/write at a 70/30 ratio with four workers and queue depth 16, (2) 1-MiB sequential mixed I/O with two workers, and (3) an eight-worker small-file create/stat/remove workload. Each is measured alone and concurrently with scrub, rebalance, and proactive drain.
+
+For fixed-budget baselines we sweep the maintenance window/rate setting from deliberately conservative to effectively unbounded values. The useful visualization is a Pareto frontier: foreground P99 slowdown on one axis and maintenance completion time or residual risk exposure on the other. We compare \autopilot{} with points that complete the same maintenance work, not merely with one hand-picked fixed limit.
+
+\begin{figure}[t]
+  \centering
+  \resultfigure{P99 foreground slowdown versus maintenance completion time / risk exposure for fixed budgets and \autopilot{}.}
+  \caption{RQ3 performance--recovery Pareto frontier. The final plot will show all fixed-budget operating points and the closed-loop controller with 95\% confidence intervals.}
+  \label{fig:rq3-pareto}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \resultfigure{P99 and P99.9 latency time series during a workload burst while maintenance is active.}
+  \caption{RQ3 foreground response during changing load. The final plot will align externally measured latency with the controller's effective work budget.}
+  \label{fig:rq3-timeseries}
+\end{figure}
+
+\resulttext{report throughput and tail-latency deltas at equal completed maintenance work, plus the location of Autopilot relative to the fixed-budget Pareto frontier.}
+
+\subsection{RQ4: Adaptation and ablation}
+A 90-minute accelerated scenario changes conditions while one controller instance remains alive: normal load, foreground burst, transient health spike, recovery, controlled corruption, sustained device risk, safe drain, device addition, and placement skew. We record risk, evidence streak, chosen action, rejected alternatives, effective work budget, true foreground P99, files repaired or rewritten, and post-action verification on a common timeline.
+
+We then disable one controller mechanism at a time while retaining the same traces and primitive implementations. Removing confirmation isolates false-positive suppression. Removing cooldown tests repeated-action oscillation. Removing pressure feedback tests foreground interference. Removing rebalance outcome feedback tests whether utility history changes work-window behavior. The safety gate itself is not disabled in the main ablation because deliberately permitting known-unsafe mutations would turn the experiment into a different system; its rejection behavior is tested directly in RQ1.
+
+\input{tables/result-ablation}
+
+\begin{figure*}[t]
+  \centering
+  \resultfigure{Aligned long-running trace: health risk and evidence; controller actions; work budget; true foreground P99; residual risk/repair progress.}
+  \caption{RQ4 closed-loop behavior across a workload and health shift. The final figure will show the complete timeline so that adaptation and hysteresis can be inspected rather than inferred only from aggregate metrics.}
+  \label{fig:rq4-trace}
+\end{figure*}
+
+\resulttext{report which ablations change false drains, risk exposure, foreground tail latency, and repeated-action oscillation, and summarize the long-running trace.}
+
+\subsection{Reproducibility}
+All synthetic traces are seed-driven. Raw records include the git revision, seed, policy, observation stream, action decisions, rejection reasons, health report, durations, and fsck/readback outcome. Performance runs record environment information and preserve per-run latency logs rather than only aggregated percentiles. The experiment scripts and manuscript use stable machine-readable JSONL/CSV artifacts; no result is copied manually from terminal output into a figure. Appendix~\ref{app:reproducibility} lists the intended artifact layout and replay commands.

@@ -5,5 +5,11 @@
 \newcommand{\etal}{et al.\xspace}
 \newcommand{\methodname}{\autopilot}
 
+\newcommand{\resultvalue}{\textcolor{resultgray}{\textit{pending}}}
+\newcommand{\resulttext}[1]{\textcolor{resultgray}{\textbf{[Result pending: #1]}}}
+\newcommand{\resultfigure}[1]{%
+  \fbox{\parbox[c][1.20in][c]{0.93\linewidth}{\centering\small\textcolor{resultgray}{\textbf{Result figure pending}\\[0.35em]#1}}}%
+}
+
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}

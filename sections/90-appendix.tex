@@ -1,21 +1,54 @@
-\section{Evaluation Metrics}
-\label{app:metrics}
+\section{Controller Details}
+\label{app:controller-details}
 
-The primary safety metrics are unsafe-action count, availability violations, data-loss events, unnecessary drain rate, and pre-failure protection rate. Effectiveness metrics include time at risk, risk-exposure area from \cref{eq:risk-exposure}, repair completion time, and bytes rewritten. Performance metrics include foreground throughput and P50/P95/P99/P99.9 latency together with maintenance progress.
+\subsection{Risk-score adapter}
+The current health adapter uses bounded additive terms and clips the sum to one. Status contributes 1.0 for failed/offline and 0.35 for degraded/draining. Reallocated sectors contribute up to 0.25 using count/400; pending sectors up to 0.25 using count/100; CRC errors up to 0.12 using count/500; I/O errors up to 0.25 using count/100. Latency above 50 ms contributes up to 0.20, wear above 80\% up to 0.20, temperature above 55\,$^\circ$C up to 0.10, and utilization above 92\% adds 0.10. The adapter marks predicted failure at risk $\ge 0.65$, pending sectors $\ge 8$, I/O errors $\ge 40$, or explicit failed status. These constants are implementation defaults, not learned parameters.
 
-\section{Planned Fault and Workload Matrix}
-\label{app:matrix}
+\subsection{Rebalance utility}
+The current rebalance feedback records a scalar utility
+\begin{equation}
+  u_{\mathrm{rebalance}} = 10\,\mathrm{skew} - 0.02\,N_{\mathrm{rewritten}}.
+\end{equation}
+An EWMA above 3.0 doubles the base window; an EWMA below $-0.5$ halves it; otherwise the base window is retained. The requested window is clamped to at most four times the base and at least one when rebalance is enabled. This heuristic is evaluated only through the RQ4 outcome-feedback ablation.
 
-Fault traces cover transient risk spikes, sustained risk, false-positive recovery, hard EIO, silent corruption, multiple concurrent risky devices, insufficient redundancy, metadata conflicts, and device addition followed by rebalance. Foreground workloads cover sequential reads/writes, random reads/writes, mixed read/write traffic, and metadata-heavy small-file operations.
+\section{Experiment Trace Definitions}
+\label{app:traces}
 
-\section{Reproducibility Protocol}
+Synthetic traces use deterministic pseudo-random seeds and a common event grammar. The event types are \emph{normal}, which emits healthy observations; \emph{spike}, which raises one or more risk fields for one interval and then returns to normal; \emph{sustained degradation}, which emits risky observations until evacuation completes or an injected failure time arrives; \emph{observation loss}, which replaces a scheduled sample with a stale/missing observation; \emph{correlated risk}, which raises evidence on two devices with an adjustable offset; \emph{insufficient redundancy}, which removes enough devices that \cref{eq:drain-precondition} is false before introducing a target risk event; and \emph{conflict}, which injects a concurrent metadata commit at a deterministic maintenance synchronization point.
+
+Ground truth is stored separately from the observation stream. False-positive noise modifies observations without changing the ground-truth failure process; false-negative noise masks a ground-truth signal. This separation permits unnecessary-drain and pre-failure-protection metrics to be computed without using controller-internal labels as truth.
+
+\section{Performance Workloads}
+\label{app:performance}
+
+The final RQ3 artifact contains the exact workload job files. The intended profiles are:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Random mixed:} 4-KiB requests, 70\% reads and 30\% writes, four workers, queue depth 16.
+  \item \textbf{Sequential mixed:} 1-MiB requests, two workers, balanced read/write phases, queue depth 4.
+  \item \textbf{Small-file metadata:} eight workers repeatedly create, stat, reopen, and remove fixed-size small files in disjoint directories.
+\end{itemize}
+Each run uses a 120-second warm-up followed by 300 seconds of retained measurement. Maintenance begins after warm-up and continues until the target amount of work completes. Policy order is randomized within each repetition.
+
+\section{Reproducibility Layout}
 \label{app:reproducibility}
 
-\begin{itemize}[leftmargin=*]
-  \item Every experiment records the \argosfs{} commit and paper-experiment configuration.
-  \item Randomized traces use explicit seeds that are replayed across all baselines.
-  \item Raw JSONL/CSV records are retained before aggregation.
-  \item Performance experiments report repetitions and confidence intervals.
-  \item Device-mapper and QEMU artifacts retain fault parameters and execution logs.
-  \item Published figures are generated from retained machine-readable results.
-\end{itemize}
+The implementation repository contains deterministic experiment drivers under \texttt{scripts/experiments/} and host fault tests under \texttt{scripts/tests/host/}. The publication artifact retains the following structure:
+\begin{verbatim}
+raw/
+  trace-*.jsonl
+  safety-*.jsonl
+  recovery-*.jsonl
+  fio-*.json
+  controller-*.jsonl
+  block-fault/*
+processed/
+  paired-summary.json
+  bootstrap-ci.json
+figures/
+  rq1-noise.*
+  rq2-exposure.*
+  rq3-pareto.*
+  rq4-trace.*
+\end{verbatim}
+
+Every raw record includes a git revision and seed. Processed summaries are generated from retained raw data. The paper's result tables and plots are regenerated from those summaries; values are not maintained as a second hand-edited source.

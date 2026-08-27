@@ -1,17 +1,17 @@
 \begin{table}[t]
   \centering
   \small
-  \caption{Controller policies used in the planned evaluation. The fixed-threshold baseline isolates the value of closed-loop control from the availability of a health signal.}
+  \caption{Controller policies. Every policy uses the same \argosfs{} data plane and maintenance primitives.}
   \label{tab:baselines}
   \begin{tabular}{@{}lcccc@{}}
     \toprule
     Policy & Health & Memory & Gates & Feedback \\
     \midrule
-    Reactive        & No  & No  & N/A & No \\
-    Periodic        & No  & No  & Basic & No \\
-    Fixed threshold & Yes & No  & Basic & No \\
-    \autopilot{}      & Yes & Yes & Yes & Yes \\
-    Oracle           & Future & N/A & Yes & Ideal \\
+    Reactive & Failure & No & Primitive & No \\
+    Periodic & No & No & Primitive & No \\
+    Threshold & Same & No & Primitive & No \\
+    \autopilot{} & Same & Yes & Full & Yes \\
+    Oracle & Future & N/A & Full & Ideal \\
     \bottomrule
   \end{tabular}
 \end{table}

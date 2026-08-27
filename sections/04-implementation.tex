@@ -1,12 +1,39 @@
-\section{Implementation in ArgosFS}
+\section{Implementation}
 \label{sec:implementation}
 
-\autopilot{} is implemented in the \argosfs{} control and volume layers. The public policy object contains the operating mode, a drain-rate limit, degraded-boot preference, background-I/O limits, placement constraints, and path classes. Invalid rates, thresholds, copy counts, and unsafe policy paths are rejected when the policy is loaded.
+\input{tables/implementation-defaults}
 
-The runtime state is versioned and persisted separately from the file-system metadata. It records run timestamps, probe/SMART/scrub/rebalance timestamps, incremental cursors, per-disk risk memory, cooldown information, and per-action statistics. Corrupt controller state is reset conservatively and reported rather than silently trusted.
+The prototype is implemented in the \argosfs{} control and volume layers and is part of the same Rust codebase as the FUSE frontend, metadata engine, erasure-code data plane, and maintenance primitives. \Cref{tab:defaults} lists the defaults used unless an experiment overrides them. This section describes implementation details that affect the interpretation or reproducibility of the design.
 
-The current safe defaults probe devices hourly, refresh SMART-like health every ten minutes, scrub every five minutes, and consider rebalance every ten minutes. Moderate predicted failures require repeated confirmation; drain attempts are bounded to one per control iteration by default. Scrub and rebalance are incremental, with explicit file budgets, so the controller need not monopolize the file system to make progress.
+\subsection{Health adapter}
+The health subsystem records status, capacity, device class, backing-device identity, failure-domain identity, rotational state, NUMA node, latency EWMAs, observed throughput, SMART-derived counters, and freshness. On host volumes, a probe discovers the backing file system and basic performance characteristics. Automatic \autopilot{} probes refresh observations without overwriting an operator's tier and weight choices; the explicit probe command may apply recommendations.
 
-Mutating maintenance uses the same metadata-conflict protection as other \argosfs{} operations. If a probe, refresh, drain, scrub, or rebalance observes a conflicting metadata transition, \autopilot{} stops subsequent mutations in that iteration. Operators can inspect the planned decisions without mutation through the dry-run and explanation interfaces, and the generic deployment includes a systemd service for repeated execution.
+The current risk adapter is deterministic. Device status contributes a base risk; reallocated sectors, pending sectors, CRC errors, I/O errors, latency, wear, temperature, and high utilization add bounded terms before the score is clipped to one. SMART data older than 24 hours is marked stale. ATA and NVMe JSON returned by \texttt{smartctl} are normalized into the same internal health structure. Because the paper studies control rather than prediction, every baseline that consumes health evidence receives the same risk stream.
 
-The implementation and experiment drivers are maintained in the public \argosfs{} repository. The paper repository contains only manuscript sources; experiment outputs intended for publication will retain the commit, configuration, and random seed required for replay.
+\subsection{Persistent controller state}
+\label{sec:persistent-state}
+Controller state is stored in \texttt{.argosfs/autopilot-state.json} with a format version. It contains cycle timestamps, scrub and rebalance cursors, per-device evidence and cooldown state, and per-action success/failure and utility statistics. A malformed or unsupported state file is reset to a conservative default and surfaced as an action warning rather than trusted silently.
+
+Each completed cycle also appends a machine-readable audit record and records an \texttt{autopilot} journal action. The command can emit compact terminal summaries or structured JSON. Experiment drivers retain the JSON so a reported result can be traced back to exact evidence, safety checks, and executed actions.
+
+\subsection{Concurrency and commit conflicts}
+Maintenance uses the normal \argosfs{} mutation path rather than a privileged side channel. Metadata commits are serialized and carry transaction identifiers. A maintenance operation that discovers a conflicting metadata transition returns a conflict error; the controller sets a stop-mutations flag and skips later mutations in the same cycle. Drain and rebalance also use per-inode locking around read--rewrite sequences. Existing integration tests exercise races between concurrent committed writes and maintenance rewrites.
+
+This behavior is a deliberate form of fail-closed control. A conflict can postpone maintenance, but postponement does not grant the controller permission to overwrite newer user state. The next scheduled cycle re-observes the file system before trying again.
+
+\subsection{Verification after action}
+After the mutating phase, the controller invokes file-system consistency checking without turning a failed verification into hidden success. The verification result is appended to the action list and feeds the action statistics. Scrub itself reports damaged, repaired, and unrecoverable files; drain reports rewritten files; rebalance reports rewritten files and its cursor. The distinction between \emph{action completed} and \emph{post-action state verified} is retained in the audit log.
+
+\subsection{Host-volume prototype scope}
+\label{sec:prototype-scope}
+The current \texttt{argosfs autopilot ROOT} command opens a host-backend volume directory. It does not yet accept the loop/raw pool selector used by \texttt{mount-root}. This scope is important because \argosfs{} can also boot directly from block-backed pools; the present controller is not yet part of that boot path.
+
+The host backend nevertheless exercises the same logical erasure coding, checksums, FUSE file operations, placement policy, scrub, file reconstruction, drain, and rebalance code used above the backend boundary. The repository also has independent raw-device fault tests using loop and device-mapper targets to validate block-error detection, degraded reads, corruption repair, journal verification, and root preflight. We use these tests as substrate validation; we do not count them as evidence that the current \autopilot{} CLI controls raw pools.
+
+\subsection{Policy surface versus active mechanisms}
+The JSON policy schema reserves fields for boot-critical paths, cold candidates, preferred boot tiers, minimum boot copies, and failure-domain-aware placement. These fields are validated syntactically, but the current \autopilot{} planner does not consume them when choosing maintenance actions. Corresponding placement behavior already exists in the \argosfs{} data plane, but connecting these declarative path fields to the controller is future work. The evaluation therefore covers only mechanisms that are active in the current controller: mode, evidence confirmation, cooldowns, drain budget, background work budgets, latency/load pauses, persistent cursors, and outcome feedback.
+
+Similarly, the policy name \texttt{max\_drains\_per\_day} is currently translated into a per-cycle drain ceiling and combined with cooldown, rather than implemented as a strict rolling 24-hour quota. We describe and evaluate the enforced per-cycle/cooldown semantics, not the stronger name.
+
+\subsection{Cost and scaling}
+A cycle's planning cost is linear in the number of devices plus the bounded files actually visited by maintenance. Health reporting and candidate selection scan device metadata. Drain cost is proportional to the data that currently references the target, because affected files must be reconstructed and rewritten. Scrub and rebalance avoid a volume-size planning spike by capping the files visited per cycle and persisting the next cursor. The controller state itself is proportional to the number of devices and action types, not the number of files.
