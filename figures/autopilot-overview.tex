@@ -17,5 +17,5 @@
 \draw[arrow] (plan) -- (exec);
 \draw[arrow] (exec) |- (verify);
 \draw[arrow] (verify.west) -| (mem.south);
-\draw[arrow] (verify.east) -| (obs.south);
+\draw[arrow] (verify.east) -- ++(0,-6mm) -| (obs.south);
 \end{tikzpicture}
