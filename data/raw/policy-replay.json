@@ -1,0 +1,386 @@
+{
+  "cooldown_checks": 10000,
+  "experiment": "autopilot-policy-replay",
+  "methods": {
+    "autopilot": {
+      "critical-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    },
+    "no-confirmation": {
+      "critical-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    },
+    "no-persistent-memory": {
+      "critical-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    },
+    "oracle": {
+      "critical-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    },
+    "periodic-2": {
+      "critical-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    },
+    "periodic-4": {
+      "critical-failure": {
+        "drains": 0,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    },
+    "reactive": {
+      "critical-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 0,
+        "failures": 0,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    },
+    "threshold": {
+      "critical-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "double-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "intermittent-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      },
+      "single-noise": {
+        "drains": 20000,
+        "failures": 0,
+        "false_drains": 20000,
+        "ppr": 0.0,
+        "protected": 0,
+        "traces": 20000,
+        "udr": 1.0
+      },
+      "sustained-failure": {
+        "drains": 20000,
+        "failures": 20000,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected": 20000,
+        "traces": 20000,
+        "udr": 0.0
+      }
+    }
+  },
+  "note": "Autopilot rows invoke production Rust risk-memory and drain-decision functions directly; baselines/ablations are harness policies.",
+  "per_cohort": 20000,
+  "seed": "0xA2605F5D15EA5E5",
+  "traces": 100000
+}

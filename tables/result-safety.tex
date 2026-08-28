@@ -1,17 +1,18 @@
 \begin{table}[t]
   \centering
   \scriptsize
-  \caption{RQ1 safety and false-action results. Lower is better for unsafe and unnecessary actions; higher is better for protection.}
+  \caption{Completed RQ1 policy replay. Each cohort contains 20,000 seeded traces. Single/double FP columns count false drains in no-failure cohorts; Protected aggregates three failure cohorts (60,000 traces).}
   \label{tab:rq1-results}
-  \begin{tabular}{@{}lccc@{}}
+  \begin{tabular}{@{}lrrr@{}}
     \toprule
-    Policy & Unsafe & False drain & Protected \\
+    Policy & Single FP & Double FP & Protected \\
     \midrule
-    Reactive & \resultvalue{} & \resultvalue{} & \resultvalue{} \\
-    Periodic & \resultvalue{} & \resultvalue{} & \resultvalue{} \\
-    Threshold & \resultvalue{} & \resultvalue{} & \resultvalue{} \\
-    \autopilot{} & \resultvalue{} & \resultvalue{} & \resultvalue{} \\
-    Oracle & \resultvalue{} & \resultvalue{} & \resultvalue{} \\
+    Reactive & 0 & 0 & 0/60k \\
+    Periodic-2 & 20k & 20k & 60k/60k \\
+    Periodic-4 & 0 & 0 & 20k/60k \\
+    Threshold & 20k & 20k & 60k/60k \\
+    \autopilot{} & \textbf{0} & 20k & \textbf{60k/60k} \\
+    Oracle & 0 & 0 & 60k/60k \\
     \bottomrule
   \end{tabular}
 \end{table}

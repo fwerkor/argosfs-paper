@@ -1,0 +1,7 @@
+policy,single_noise_false_drains,double_noise_false_drains,protected_failure_traces,failure_traces,protection_rate
+reactive,0,0,0,60000,0.000000
+periodic-2,20000,20000,60000,60000,1.000000
+periodic-4,0,0,20000,60000,0.333333
+threshold,20000,20000,60000,60000,1.000000
+autopilot,0,20000,60000,60000,1.000000
+oracle,0,0,60000,60000,1.000000

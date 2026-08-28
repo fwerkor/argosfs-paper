@@ -12,9 +12,10 @@ The draft is complete at the method/design level. It includes:
 - implementation details and current prototype limitations;
 - a related-work comparison spanning autonomic storage, proactive fault tolerance, scrub scheduling, reliability coordination, and maintenance I/O scheduling;
 - a frozen RQ1--RQ4 evaluation protocol with baselines, metrics, trace generation, hardware setup, and statistical rules;
-- explicit placeholders only for final quantitative values and result plots.
+- completed RQ1 policy-replay and file-system validation results, with raw and processed data archived under `data/`;
+- explicit placeholders only for the still-pending recovery/performance values and result plots.
 
-No final performance or reliability effect size is claimed until the corresponding experiment artifact has been produced.
+Completed safety/controller counts are reported only where retained artifacts exist. Risk-exposure and foreground-performance effect sizes remain unclaimed until their corresponding experiment artifacts are produced.
 
 ## Build
 
@@ -45,8 +46,9 @@ sections/                 Manuscript sections
 figures/                  Method figure sources
 config/                   LaTeX packages and commands
 tables/                   Design, configuration, and result tables
+data/                     Retained raw data, derived summaries, manifest
 references.bib             Bibliography
-scripts/                   Build and validation utilities
+scripts/                   Build, validation, and data-summary utilities
 ```
 
 ## Status
@@ -54,7 +56,7 @@ scripts/                   Build and validation utilities
 - Repository visibility: public
 - Public PDF preview: enabled through GitHub Pages
 - Non-result manuscript content: complete draft
-- Quantitative result tables/plots: explicit placeholders
+- Quantitative results: RQ1/controller validation populated; RQ2/RQ3 performance values remain explicit placeholders
 - Scope: current Autopilot CLI on the ArgosFS host-volume backend; block-backend fault behavior is treated separately as substrate validation
 
 ## Related implementation

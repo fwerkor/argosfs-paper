@@ -1,0 +1,7 @@
+scenario,runs,passed,failed,pass_rate,median_duration_sec
+autopilot-drain,5,5,0,1.000000,1.723622
+clean-write,5,5,0,1.000000,0.842661
+degraded-read,5,5,0,1.000000,1.012356
+interrupted-rename,5,5,0,1.000000,0.834512
+interrupted-write,5,5,0,1.000000,0.874322
+self-heal,5,5,0,1.000000,1.075269

@@ -1,0 +1,7 @@
+scenario,runs,passed,failed,pass_rate,median_duration_sec
+confirmed-risk-drain,3,3,0,1.000000,38.464132
+cooldown-after-drain,3,3,0,1.000000,18.177759
+critical-drain,3,3,0,1.000000,28.051049
+insufficient-redundancy-observe,3,3,0,1.000000,9.723772
+rebalance-empty-device,3,3,0,1.000000,122.299818
+scrub-repair-corruption,3,3,0,1.000000,18.421242

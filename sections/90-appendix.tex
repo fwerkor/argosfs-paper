@@ -32,23 +32,20 @@ Each run uses a 120-second warm-up followed by 300 seconds of retained measureme
 \section{Reproducibility Layout}
 \label{app:reproducibility}
 
-The implementation repository contains deterministic experiment drivers under \texttt{scripts/experiments/} and host fault tests under \texttt{scripts/tests/host/}. The publication artifact retains the following structure:
+The paper repository already retains completed non-performance artifacts in the following structure:
 \begin{verbatim}
-raw/
-  trace-*.jsonl
-  safety-*.jsonl
-  recovery-*.jsonl
-  fio-*.json
-  controller-*.jsonl
-  block-fault/*
-processed/
-  paired-summary.json
-  bootstrap-ci.json
-figures/
-  rq1-noise.*
-  rq2-exposure.*
-  rq3-pareto.*
-  rq4-trace.*
+data/
+  raw/
+    autopilot-matrix.jsonl
+    failure-matrix.jsonl
+    policy-replay.json
+  processed/
+    autopilot-matrix-summary.csv
+    failure-matrix-summary.csv
+    policy-replay-summary.csv
+    rq1-policy-summary.csv
+    manifest.json
 \end{verbatim}
+The manifest records ArgosFS revision \texttt{a52f6d2b5899a806829a5e12cd392d8676ff4034} and SHA-256 checksums for every retained raw file. The JSONL matrix records carry the experiment seed and run metadata; the policy replay records its global seed and cohort size. Derived CSV files are regenerated from the retained raw data by \texttt{scripts/summarize\_data.py}. The incomplete Backblaze remote-stream attempt and unfinished performance runs are not mixed into the reported dataset.
 
-Every raw record includes a git revision and seed. Processed summaries are generated from retained raw data. The paper's result tables and plots are regenerated from those summaries; values are not maintained as a second hand-edited source.
+The final artifact will extend this layout with per-run performance logs, paired bootstrap summaries, and figure inputs for RQ2--RQ4.

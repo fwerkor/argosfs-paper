@@ -1,0 +1,28 @@
+{
+  "argosfs_revision": "a52f6d2b5899a806829a5e12cd392d8676ff4034",
+  "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+  "completed_datasets": {
+    "autopilot-matrix": {
+      "runs": 18,
+      "scenarios": 6
+    },
+    "failure-matrix": {
+      "runs": 30,
+      "scenarios": 6
+    },
+    "policy-replay": {
+      "traces": 100000,
+      "per_cohort": 20000,
+      "seed": "0xA2605F5D15EA5E5",
+      "cooldown_checks": 10000
+    }
+  },
+  "sha256": {
+    "data/raw/autopilot-matrix.jsonl": "f0694a9aab57be326e06c891d3a923e1094afd6c12c856c3dba457379d29e06a",
+    "data/raw/failure-matrix.jsonl": "820022fd65047616e6ebbde303b138494adffb190953ffa3ce2a3a20a9eaafe2",
+    "data/raw/policy-replay.json": "e0d6a6787a5ad463dd9e7aa3f5366d433c4feb5e5895e2730b38760b23e8be5d"
+  },
+  "notes": [
+    "Backblaze Q1 2026 replay is not included because the attempted remote-stream replay terminated before completing all 90 days; no partial result is used in the manuscript."
+  ]
+}
