@@ -12,7 +12,7 @@ The draft is complete at the method/design level. It includes:
 - implementation details and current prototype limitations;
 - a related-work comparison spanning autonomic storage, proactive fault tolerance, scrub scheduling, reliability coordination, and maintenance I/O scheduling;
 - a frozen RQ1--RQ4 evaluation protocol with baselines, metrics, trace generation, hardware setup, and statistical rules;
-- completed RQ1 policy-replay and file-system validation results, with raw and processed data archived under `data/`;
+- completed synthetic RQ1, Backblaze Q1 2026 replay, and file-system validation results, with raw and processed data archived under `data/`;
 - explicit placeholders only for the still-pending recovery/performance values and result plots.
 
 Completed safety/controller counts are reported only where retained artifacts exist. Risk-exposure and foreground-performance effect sizes remain unclaimed until their corresponding experiment artifacts are produced.
@@ -56,7 +56,7 @@ scripts/                   Build, validation, and data-summary utilities
 - Repository visibility: public
 - Public PDF preview: enabled through GitHub Pages
 - Non-result manuscript content: complete draft
-- Quantitative results: RQ1/controller validation populated; RQ2/RQ3 performance values remain explicit placeholders
+- Quantitative results: synthetic/public-trace RQ1 and controller validation populated; RQ2/RQ3 performance values remain explicit placeholders
 - Scope: current Autopilot CLI on the ArgosFS host-volume backend; block-backend fault behavior is treated separately as substrate validation
 
 ## Related implementation

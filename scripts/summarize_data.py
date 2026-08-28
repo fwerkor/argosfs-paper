@@ -67,6 +67,45 @@ def main() -> None:
                     ]
                 )
 
+
+    backblaze = json.loads((RAW / "backblaze-q1-2026.json").read_text())
+    with (OUT / "backblaze-q1-2026-summary.csv").open("w", newline="") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(
+            [
+                "method",
+                "horizon_days",
+                "drains",
+                "failures",
+                "protected_failures",
+                "ppr",
+                "evaluable_drains",
+                "true_drains",
+                "false_drains",
+                "censored_drains",
+                "non_failure_drain_rate",
+            ]
+        )
+        for method in ["periodic-7", "threshold", "autopilot", "no-persistent-memory", "reactive", "oracle"]:
+            row = backblaze["results"][method]
+            for horizon in (7, 30):
+                metrics = row[f"h{horizon}"]
+                writer.writerow(
+                    [
+                        method,
+                        horizon,
+                        row["drains"],
+                        metrics["failures"],
+                        metrics["protected_failures"],
+                        metrics["ppr"],
+                        metrics.get("evaluable_drains", ""),
+                        metrics.get("true_drains", ""),
+                        metrics.get("false_drains", ""),
+                        metrics.get("censored_drains", ""),
+                        metrics.get("udr", ""),
+                    ]
+                )
+
     policies = ["reactive", "periodic-2", "periodic-4", "threshold", "autopilot", "oracle"]
     failure_cohorts = ["critical-failure", "intermittent-failure", "sustained-failure"]
     with (OUT / "rq1-policy-summary.csv").open("w", newline="") as stream:
@@ -112,10 +151,20 @@ def main() -> None:
                 "seed": replay["seed"],
                 "cooldown_checks": replay["cooldown_checks"],
             },
+            "backblaze-q1-2026": {
+                "days": backblaze["period"]["days"],
+                "rows": backblaze["rows"],
+                "unique_drives": backblaze["unique_drives"],
+                "models": backblaze["models"],
+                "failures": backblaze["failures"],
+                "predicted_rows": backblaze["predicted_rows"],
+                "source_archive_sha256": backblaze["source_archive_sha256"],
+            },
         },
         "sha256": checksums,
         "notes": [
-            "Backblaze Q1 2026 replay is not included because the attempted remote-stream replay terminated before completing all 90 days; no partial result is used in the manuscript."
+            "The 1.31-GB Backblaze source archive is not checked into this repository; its SHA-256 is retained in the raw replay result and manifest.",
+            "The completed Backblaze result covers all 90 daily CSV snapshots. The earlier incomplete remote-stream attempt is not retained or used.",
         ],
     }
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

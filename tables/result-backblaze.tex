@@ -1,0 +1,15 @@
+\begin{table}[t]
+  \centering
+  \scriptsize
+  \caption{Backblaze Q1 2026 SMART replay over 351,095 drives and 1,030 labeled failures. PPR is the fraction of labeled failures preceded by a drain decision 1--30 days earlier. NF30 is the fraction of evaluable drain decisions not followed by a labeled failure within 30 days; lower is better.}
+  \label{tab:backblaze-results}
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+    Policy & Drain decisions & PPR30 & NF30 \\
+    \midrule
+    Threshold & 6,436 & 21.5\% & 96.2\% \\
+    \autopilot{} & 6,314 & 20.2\% & 96.4\% \\
+    $-$ persistent memory & 6,314 & 20.2\% & 96.4\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}

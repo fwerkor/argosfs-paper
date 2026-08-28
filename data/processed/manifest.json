@@ -15,14 +15,25 @@
       "per_cohort": 20000,
       "seed": "0xA2605F5D15EA5E5",
       "cooldown_checks": 10000
+    },
+    "backblaze-q1-2026": {
+      "days": 90,
+      "rows": 30597484,
+      "unique_drives": 351095,
+      "models": 80,
+      "failures": 1030,
+      "predicted_rows": 423908,
+      "source_archive_sha256": "cad66574292b89bae8ec8370dbb5e90d2e0b45d61341502708df328fdb15ed5c"
     }
   },
   "sha256": {
     "data/raw/autopilot-matrix.jsonl": "f0694a9aab57be326e06c891d3a923e1094afd6c12c856c3dba457379d29e06a",
+    "data/raw/backblaze-q1-2026.json": "bea4f4d4616da0509124b6564bcfcb86b37cc6dd7f6a05f89e108730fe674d17",
     "data/raw/failure-matrix.jsonl": "820022fd65047616e6ebbde303b138494adffb190953ffa3ce2a3a20a9eaafe2",
     "data/raw/policy-replay.json": "e0d6a6787a5ad463dd9e7aa3f5366d433c4feb5e5895e2730b38760b23e8be5d"
   },
   "notes": [
-    "Backblaze Q1 2026 replay is not included because the attempted remote-stream replay terminated before completing all 90 days; no partial result is used in the manuscript."
+    "The 1.31-GB Backblaze source archive is not checked into this repository; its SHA-256 is retained in the raw replay result and manifest.",
+    "The completed Backblaze result covers all 90 daily CSV snapshots. The earlier incomplete remote-stream attempt is not retained or used."
   ]
 }

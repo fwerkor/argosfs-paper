@@ -1,0 +1,165 @@
+{
+  "argosfs_revision": "a52f6d2b5899a806829a5e12cd392d8676ff4034",
+  "experiment": "backblaze-smart-trace-replay",
+  "failures": 1030,
+  "limitations": [
+    "Controller replay uses only SMART fields that map directly to current ArgosFS health counters; unavailable signals are absent.",
+    "False-drain metrics use fixed 7-day and 30-day horizons and censor drains without sufficient follow-up.",
+    "Daily snapshots do not establish within-day SMART/failure ordering; same-day warnings are conservatively excluded from proactive protection."
+  ],
+  "mapping": {
+    "same_day_failure_warning_counts_as_proactive": false,
+    "smart_194_raw": "temperature_c when 0..100",
+    "smart_197_raw": "pending_sectors",
+    "smart_199_raw": "crc_errors",
+    "smart_5_raw": "reallocated_sectors",
+    "unavailable_argosfs_signals": [
+      "io_errors",
+      "latency_ms",
+      "wear_percent",
+      "near_capacity",
+      "disk_status"
+    ]
+  },
+  "models": 80,
+  "period": {
+    "days": 90,
+    "end": "2026-03-31",
+    "start": "2026-01-01"
+  },
+  "predicted_rows": 423908,
+  "results": {
+    "autopilot": {
+      "drains": 6314,
+      "h30": {
+        "censored_drains": 570,
+        "evaluable_drains": 5744,
+        "failures": 1030,
+        "false_drains": 5536,
+        "ppr": 0.20194174757281552,
+        "protected_failures": 208,
+        "true_drains": 208,
+        "udr": 0.9637883008356546
+      },
+      "h7": {
+        "censored_drains": 154,
+        "evaluable_drains": 6160,
+        "failures": 1030,
+        "false_drains": 6101,
+        "ppr": 0.05728155339805825,
+        "protected_failures": 59,
+        "true_drains": 59,
+        "udr": 0.9904220779220779
+      }
+    },
+    "no-persistent-memory": {
+      "drains": 6314,
+      "h30": {
+        "censored_drains": 571,
+        "evaluable_drains": 5743,
+        "failures": 1030,
+        "false_drains": 5535,
+        "ppr": 0.20194174757281552,
+        "protected_failures": 208,
+        "true_drains": 208,
+        "udr": 0.9637819954727495
+      },
+      "h7": {
+        "censored_drains": 154,
+        "evaluable_drains": 6160,
+        "failures": 1030,
+        "false_drains": 6101,
+        "ppr": 0.05728155339805825,
+        "protected_failures": 59,
+        "true_drains": 59,
+        "udr": 0.9904220779220779
+      }
+    },
+    "oracle": {
+      "drains": 1030,
+      "h30": {
+        "censored_drains": 0,
+        "evaluable_drains": 1030,
+        "failures": 1030,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected_failures": 1030,
+        "true_drains": 1030,
+        "udr": 0.0
+      },
+      "h7": {
+        "censored_drains": 0,
+        "evaluable_drains": 1030,
+        "failures": 1030,
+        "false_drains": 0,
+        "ppr": 1.0,
+        "protected_failures": 1030,
+        "true_drains": 1030,
+        "udr": 0.0
+      }
+    },
+    "periodic-7": {
+      "drains": 6171,
+      "h30": {
+        "censored_drains": 515,
+        "evaluable_drains": 5656,
+        "failures": 1030,
+        "false_drains": 5464,
+        "ppr": 0.18640776699029127,
+        "protected_failures": 192,
+        "true_drains": 192,
+        "udr": 0.9660537482319661
+      },
+      "h7": {
+        "censored_drains": 141,
+        "evaluable_drains": 6030,
+        "failures": 1030,
+        "false_drains": 5987,
+        "ppr": 0.04174757281553398,
+        "protected_failures": 43,
+        "true_drains": 43,
+        "udr": 0.9928689883913765
+      }
+    },
+    "reactive": {
+      "drains": 1030,
+      "h30": {
+        "failures": 1030,
+        "ppr": 0.0,
+        "protected_failures": 0
+      },
+      "h7": {
+        "failures": 1030,
+        "ppr": 0.0,
+        "protected_failures": 0
+      }
+    },
+    "threshold": {
+      "drains": 6436,
+      "h30": {
+        "censored_drains": 591,
+        "evaluable_drains": 5845,
+        "failures": 1030,
+        "false_drains": 5624,
+        "ppr": 0.2145631067961165,
+        "protected_failures": 221,
+        "true_drains": 221,
+        "udr": 0.9621899059024808
+      },
+      "h7": {
+        "censored_drains": 149,
+        "evaluable_drains": 6287,
+        "failures": 1030,
+        "false_drains": 6223,
+        "ppr": 0.062135922330097085,
+        "protected_failures": 64,
+        "true_drains": 64,
+        "udr": 0.9898202640369016
+      }
+    }
+  },
+  "rows": 30597484,
+  "source": "https://f001.backblazeb2.com/file/Backblaze-Hard-Drive-Data/data_Q1_2026.zip",
+  "source_archive_sha256": "cad66574292b89bae8ec8370dbb5e90d2e0b45d61341502708df328fdb15ed5c",
+  "unique_drives": 351095
+}
